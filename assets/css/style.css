@@ -310,3 +310,36 @@ footer{
     background:white;
     color:#0f172a;
 }
+.search-box{
+display:flex;
+justify-content:center;
+align-items:center;
+gap:10px;
+margin:30px 0;
+flex-wrap:wrap;
+}
+
+.search-box input{
+width:320px;
+padding:15px;
+border-radius:10px;
+border:none;
+font-size:16px;
+outline:none;
+}
+
+.search-box button{
+padding:15px 25px;
+border:none;
+border-radius:10px;
+cursor:pointer;
+background:#f4b400;
+color:#000;
+font-weight:bold;
+transition:.3s;
+}
+
+.search-box button:hover{
+transform:translateY(-2px);
+opacity:.9;
+}
