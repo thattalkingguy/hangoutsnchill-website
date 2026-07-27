@@ -95,3 +95,24 @@ document.getElementById("loader").classList.add("hidden");
 },2000);
 
 });
+function askBuilderAI(){
+
+const question = document.getElementById("userQuestion").value;
+
+const answer = document.getElementById("aiAnswer");
+
+if(question.trim() === ""){
+
+answer.innerHTML = "Please type a question first.";
+
+return;
+
+}
+
+answer.innerHTML =
+"<strong>Builder AI:</strong><br><br>" +
+"Great question!<br><br>" +
+"You asked:<br><em>" + question + "</em><br><br>" +
+"This is where Builder AI will soon provide intelligent answers powered by AI.";
+
+}
