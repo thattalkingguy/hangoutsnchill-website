@@ -86,22 +86,28 @@ document.body.classList.add("dark-mode");
 }
 
 }
-window.addEventListener("load", function(){
+window.addEventListener("load", function () {
 
-setTimeout(function(){
+setTimeout(function () {
 
-document.getElementById("loader").classList.add("hidden");
+const loader = document.getElementById("loader");
 
-},2000);
+if (loader) {
+
+loader.classList.add("hidden");
+
+}
+
+}, 2000);
 
 });
-function askBuilderAI(){
+async function askBuilderAI() {
 
 const question = document.getElementById("userQuestion").value;
 
 const answer = document.getElementById("aiAnswer");
 
-if(question.trim() === ""){
+if (question.trim() === "") {
 
 answer.innerHTML = "Please type a question first.";
 
@@ -109,10 +115,46 @@ return;
 
 }
 
-answer.innerHTML =
-"<strong>Builder AI:</strong><br><br>" +
-"Great question!<br><br>" +
-"You asked:<br><em>" + question + "</em><br><br>" +
-"This is where Builder AI will soon provide intelligent answers powered by AI.";
+answer.innerHTML = "🤖 Builder AI is thinking...";
+
+try {
+
+const response = await fetch("/api/chat", {
+
+method: "POST",
+
+headers: {
+
+"Content-Type": "application/json"
+
+},
+
+body: JSON.stringify({
+
+question: question
+
+})
+
+});
+
+const data = await response.json();
+
+if (data.success) {
+
+answer.innerHTML = data.answer;
+
+} else {
+
+answer.innerHTML = "❌ " + data.error;
+
+}
+
+} catch (error) {
+
+answer.innerHTML = "Unable to contact Builder AI.";
+
+console.error(error);
+
+}
 
 }
