@@ -5,44 +5,37 @@ const ai = new GoogleGenAI({
 });
 
 export default async function handler(req, res) {
-    if (req.method !== "POST") {
-  return res.status(405).json({
-    error: "Method Not Allowed",
-  });
-}
-
-try {
-
-  const { question } = req.body;
-
-  if (!question) {
-    return res.status(400).json({
-      error: "Question is required.",
+  if (req.method !== "POST") {
+    return res.status(405).json({
+      error: "Method Not Allowed",
     });
   }
-  const response = await ai.models.generateContent({
-  model: "gemini-2.0-flash",
-  contents: question,
-});
 
-const answer =
-  typeof response.text === "string"
-    ? response.text
-    : response.text?.() || "No response from Gemini.";
+  try {
+    const { question } = req.body;
 
-return res.status(200).json({
-  success: true,
-  answer,
-});
+    if (!question) {
+      return res.status(400).json({
+        error: "Question is required.",
+      });
+    }
 
-catch (error) {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: question,
+    });
 
-  console.error("Gemini Full Error:", JSON.stringify(error, null, 2));
+    return res.status(200).json({
+      success: true,
+      answer: response.text,
+    });
 
-  return res.status(500).json({
-    success: false,
-    message: error.message,
-    fullError: error
-  });
+  } catch (error) {
+    console.error("Gemini Error:", error);
 
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
 }
