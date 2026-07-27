@@ -37,12 +37,12 @@ return res.status(200).json({
 
 catch (error) {
 
-  console.error("Gemini Error:", error);
+  console.error("Gemini Full Error:", JSON.stringify(error, null, 2));
 
   return res.status(500).json({
     success: false,
-    error: error.message,
-    details: error,
+    message: error.message,
+    fullError: error
   });
 
 }
