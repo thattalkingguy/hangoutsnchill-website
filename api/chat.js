@@ -35,15 +35,14 @@ return res.status(200).json({
   answer,
 });
 
-} catch (error) {
+catch (error) {
 
   console.error("Gemini Error:", error);
 
   return res.status(500).json({
     success: false,
-    error: "Something went wrong while talking to Builder AI.",
+    error: error.message,
+    details: error,
   });
-
-}
 
 }
