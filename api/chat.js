@@ -37,7 +37,7 @@ return res.status(200).json({
 
 } catch (error) {
 
-  console.error(error);
+  console.error("Gemini Error:", error);
 
   return res.status(500).json({
     success: false,
