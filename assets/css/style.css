@@ -1,3 +1,17 @@
+:root{
+
+--ttg-gold:#D4AF37;
+--ttg-black:#111111;
+--ttg-white:#FFFFFF;
+--ttg-light:#F8F8F8;
+--ttg-grey:#666666;
+
+--radius:12px;
+
+--shadow:0 10px 30px rgba(0,0,0,.08);
+
+}
+
 *{
     margin:0;
     padding:0;
@@ -5,9 +19,9 @@
 }
 
 body{
-    font-family:Arial, Helvetica, sans-serif;
-    background:#f5f7fa;
-    color:#333;
+    font-family:"Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background:var(--ttg-light);
+    color:var(--ttg-black);
     line-height:1.6;
 }
 
@@ -106,9 +120,9 @@ section{
 .card{
     background:white;
     padding:30px;
-    border-radius:18px;
+    border-radius:var(--radius);
     margin-bottom:25px;
-    box-shadow:0 10px 30px rgba(0,0,0,.08);
+    box-shadow:var(--shadow);
     transition:all .35s ease;
 }
 
@@ -342,4 +356,80 @@ transition:.3s;
 .search-box button:hover{
 transform:translateY(-2px);
 opacity:.9;
+}
+.theme-toggle{
+display:flex;
+justify-content:flex-end;
+padding:20px 40px;
+}
+
+.theme-toggle button{
+background:var(--ttg-black);
+color:var(--ttg-white);
+border:none;
+padding:12px 20px;
+border-radius:var(--radius);
+cursor:pointer;
+font-weight:bold;
+box-shadow:var(--shadow);
+transition:var(--transition);
+}
+
+.theme-toggle button:hover{
+transform:translateY(-2px);
+background:var(--ttg-gold);
+color:var(--ttg-black);
+}
+.dark-mode{
+background:#121212;
+color:#f5f5f5;
+}
+
+.dark-mode nav{
+background:#1b1b1b;
+}
+
+.dark-mode .card{
+background:#1f1f1f;
+color:#f5f5f5;
+}
+
+.dark-mode .hero{
+background:#181818;
+}
+
+.dark-mode a{
+color:var(--ttg-gold);
+}
+#loader{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100vh;
+background:var(--ttg-black);
+color:var(--ttg-white);
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+z-index:9999;
+text-align:center;
+transition:opacity .8s ease, visibility .8s ease;
+}
+
+#loader h1{
+font-size:3rem;
+color:var(--ttg-gold);
+margin-bottom:20px;
+}
+
+#loader p{
+font-size:1.2rem;
+margin:6px 0;
+}
+
+#loader.hidden{
+opacity:0;
+visibility:hidden;
 }
