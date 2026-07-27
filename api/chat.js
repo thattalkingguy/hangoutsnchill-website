@@ -25,9 +25,14 @@ try {
   contents: question,
 });
 
+const answer =
+  typeof response.text === "string"
+    ? response.text
+    : response.text?.() || "No response from Gemini.";
+
 return res.status(200).json({
   success: true,
-  answer: response.text ?? "No response from Gemini.",
+  answer,
 });
 
 } catch (error) {
