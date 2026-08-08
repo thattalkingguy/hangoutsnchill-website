@@ -1,36 +1,106 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HangoutsNChill
 
-## Getting Started
+> **Learn. Create. Earn.**
 
-First, run the development server:
+HangoutsNChill is an AI-powered digital marketplace that empowers creators, entrepreneurs, and learners to create, market, and sell digital products from anywhere in the world.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+# 🌍 Our Mission
+
+To empower creators with AI-powered tools that help them learn, create, market, sell, and earn.
+
+---
+
+# 🚀 Our Vision
+
+To become Africa's leading AI-powered digital marketplace where anyone can turn knowledge, creativity, and skills into sustainable income.
+
+---
+
+# ✨ Core Features
+
+- 🛒 Digital Marketplace
+- 🤖 Nestuge AI Product Writer
+- 💳 Secure Payments (Paystack)
+- 👤 User Authentication
+- ❤️ Wishlist
+- ⭐ Product Reviews
+- 🔍 Smart Search
+- 📚 Creator Academy *(Coming Soon)*
+- 💬 Community *(Coming Soon)*
+- 💼 Seller Dashboard
+
+---
+
+# 🛠 Tech Stack
+
+- **Frontend:** Next.js 16, React, TypeScript
+- **Styling:** Tailwind CSS
+- **Backend:** Supabase
+- **Authentication:** Supabase Auth
+- **Database:** PostgreSQL
+- **Artificial Intelligence:** Google Gemini (Nestuge AI)
+- **Payments:** Paystack
+- **Deployment:** Vercel
+
+---
+
+# 📂 Project Structure
+
+```text
+app/                # Next.js App Router
+components/         # Reusable UI components
+docs/               # Company and technical documentation
+public/             # Static assets
+supabase/           # Database migrations and configuration
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+# 📖 Documentation
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The `docs` folder contains the foundation of HangoutsNChill:
 
-## Learn More
+- Vision
+- Roadmap
+- Company Principles
+- Manifesto
+- Founder Journal
+- Letter to the First Employee
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# 🚧 Project Status
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Currently under active development.**
 
-## Deploy on Vercel
+Recent milestones include:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- ✅ User Authentication
+- ✅ Marketplace
+- ✅ Product Management
+- ✅ Nestuge AI Integration
+- ✅ Paystack Integration
+- ✅ Supabase Backend
+- 🚧 Wishlist
+- 🚧 Reviews
+- 🚧 Advanced Search
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+# 🤝 Contributing
+
+At this stage, HangoutsNChill is a private project. Contributions may be welcomed in the future as the platform grows.
+
+---
+
+# 👨‍💻 Founder
+
+**Ola Olabode**
+
+*"Dream boldly. Build patiently. Serve faithfully."*
+
+---
+
+Built with ❤️ in Nigeria.
