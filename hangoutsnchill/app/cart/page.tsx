@@ -9,6 +9,8 @@ type CartItem = {
   price: number;
   image_url?: string;
   quantity?: number;
+  seller_id: string;
+  currency: string;
 };
 
 export default function CartPage() {

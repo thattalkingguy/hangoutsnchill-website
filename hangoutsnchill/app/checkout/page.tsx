@@ -83,15 +83,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (cart.length > 1) {
-      setErrorMessage(
-        "Please checkout one product at a time for now."
-      );
-      return;
-    }
-
-    const item = cart[0];
-
     setProcessing(true);
 
     try {
@@ -105,9 +96,56 @@ export default function CheckoutPage() {
         return;
       }
 
-      const amountInKobo = Math.round(
-        item.price * item.quantity * 100
+      /*
+       * For now, HangoutsNChill accepts NGN checkout only.
+       * This prevents accidentally combining products with
+       * different currencies in one Paystack transaction.
+       */
+      const currencies = [
+        ...new Set(
+          cart.map((item) => (item.currency ?? "NGN").toUpperCase())
+        ),
+      ];
+
+      if (currencies.length > 1) {
+        throw new Error(
+          "Your cart contains products with different currencies. Please checkout products with the same currency together."
+        );
+      }
+
+      const currency = currencies[0] ?? "NGN";
+
+      if (currency !== "NGN") {
+        throw new Error(
+          "Only NGN checkout is currently supported."
+        );
+      }
+
+      const amountInNaira = cart.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
       );
+
+      const amountInKobo = Math.round(amountInNaira * 100);
+
+      if (amountInKobo <= 0) {
+        throw new Error("Invalid checkout amount.");
+      }
+
+      /*
+       * Send the complete cart to our server.
+       *
+       * The server will put these items into Paystack metadata
+       * and later use the same metadata during verification to
+       * create the individual orders for each seller.
+       */
+      const items = cart.map((item) => ({
+        productId: item.id,
+        sellerId: item.seller_id,
+        quantity: item.quantity,
+        unitPrice: item.price,
+        title: item.title,
+      }));
 
       const response = await fetch(
         "/api/paystack/initialize",
@@ -119,12 +157,9 @@ export default function CheckoutPage() {
           body: JSON.stringify({
             email,
             amount: amountInKobo,
-            currency: item.currency ?? "NGN",
+            currency,
             userId: user.id,
-            sellerId: item.seller_id,
-            productId: item.id,
-            quantity: item.quantity,
-            unitPrice: item.price,
+            items,
           }),
         }
       );
@@ -164,18 +199,19 @@ export default function CheckoutPage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <p className="text-gray-500">
-          Preparing checkout...
-        </p>
+      <main className="min-h-screen bg-gray-50 p-8">
+        <div className="mx-auto max-w-3xl">
+          <p className="text-gray-500">
+            Preparing checkout...
+          </p>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-100 p-6">
+    <main className="min-h-screen bg-gray-50 p-8">
       <div className="mx-auto max-w-3xl">
-
         <Link
           href="/cart"
           className="text-sm font-medium text-blue-600 hover:text-blue-800"
@@ -198,13 +234,11 @@ export default function CheckoutPage() {
         )}
 
         <div className="mt-8 rounded-xl bg-white p-6 shadow">
-
           <h2 className="text-xl font-bold">
             Order Summary
           </h2>
 
           <div className="mt-5 space-y-4">
-
             {cart.map((item) => (
               <div
                 key={item.id}
@@ -218,30 +252,33 @@ export default function CheckoutPage() {
                   <p className="text-sm text-gray-500">
                     Quantity: {item.quantity}
                   </p>
+
+                  <p className="text-sm text-gray-500">
+                    Unit price: ₦
+                    {item.price.toLocaleString()}
+                  </p>
                 </div>
 
                 <p className="font-semibold">
-                  {item.currency ?? "NGN"}{" "}
-                  {(item.price * item.quantity).toLocaleString()}
+                  ₦
+                  {(
+                    item.price * item.quantity
+                  ).toLocaleString()}
                 </p>
               </div>
             ))}
-
           </div>
 
           <div className="mt-6 flex items-center justify-between text-xl font-bold">
             <span>Total</span>
 
             <span>
-              {cart[0]?.currency ?? "NGN"}{" "}
-              {total.toLocaleString()}
+              ₦{total.toLocaleString()}
             </span>
           </div>
-
         </div>
 
         <div className="mt-6 rounded-xl bg-white p-6 shadow">
-
           <label className="mb-2 block font-semibold">
             Email Address
           </label>
@@ -264,11 +301,9 @@ export default function CheckoutPage() {
           >
             {processing
               ? "Connecting to Paystack..."
-              : `Pay ${cart[0]?.currency ?? "NGN"} ${total.toLocaleString()}`}
+              : `Pay ₦${total.toLocaleString()}`}
           </button>
-
         </div>
-
       </div>
     </main>
   );

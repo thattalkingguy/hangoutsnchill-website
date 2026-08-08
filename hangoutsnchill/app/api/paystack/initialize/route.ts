@@ -68,7 +68,8 @@ export async function POST(request: Request) {
         platform: "HangoutsNChill",
       },
 
-      callback_url: "http://localhost:3000/payment/success",
+      callback_url:
+        "https://hangoutsnchill-website.vercel.app/payment/success",
 
       ...(reference ? { reference } : {}),
     };
