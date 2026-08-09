@@ -65,12 +65,14 @@ export async function POST(req: Request) {
      * One Paystack reference can produce multiple marketplace
      * orders, so we check the reference across the orders table.
      */
-    const { data: existingOrders, error: existingOrdersError } =
-      await supabase
-        .from("orders")
-        .select("id")
-        .eq("paystack_reference", reference)
-        .limit(1);
+    const {
+      data: existingOrders,
+      error: existingOrdersError,
+    } = await supabase
+      .from("orders")
+      .select("id")
+      .eq("paystack_reference", reference)
+      .limit(1);
 
     if (existingOrdersError) {
       console.error(existingOrdersError);
@@ -134,9 +136,6 @@ export async function POST(req: Request) {
 
     /*
      * Recalculate the expected cart amount from the metadata.
-     *
-     * Paystack amount is stored in the smallest currency unit,
-     * while our marketplace prices are in Naira.
      */
     const calculatedAmount = cartItems.reduce(
       (sum, item) =>
@@ -193,9 +192,6 @@ export async function POST(req: Request) {
 
     /*
      * Create one marketplace order for every product.
-     *
-     * All orders use the same Paystack reference because they
-     * were paid for in one transaction.
      */
     const orders = cartItems.map((item) => ({
       buyer_id: buyerId,
@@ -231,15 +227,7 @@ export async function POST(req: Request) {
     }
 
     /*
-     * Group the purchased amounts by seller.
-     *
-     * Example:
-     *
-     * Seller A → ₦14,300 + ₦5,000
-     * Seller B → ₦8,000
-     *
-     * This ensures each seller receives only the money
-     * belonging to their own products.
+     * Group purchased amounts by seller.
      */
     const sellerTotals = new Map<string, number>();
 
@@ -266,12 +254,14 @@ export async function POST(req: Request) {
       sellerId,
       sellerAmount,
     ] of sellerTotals.entries()) {
-      const { data: wallet, error: walletError } =
-        await supabase
-          .from("wallets")
-          .select("*")
-          .eq("user_id", sellerId)
-          .maybeSingle();
+      const {
+        data: wallet,
+        error: walletError,
+      } = await supabase
+        .from("wallets")
+        .select("*")
+        .eq("user_id", sellerId)
+        .maybeSingle();
 
       if (walletError) {
         console.error(walletError);
@@ -289,27 +279,28 @@ export async function POST(req: Request) {
       }
 
       if (wallet) {
-        const { error: walletUpdateError } =
-          await supabase
-            .from("wallets")
-            .update({
-              balance:
-                Number(wallet.balance) +
-                sellerAmount,
+        const {
+          error: walletUpdateError,
+        } = await supabase
+          .from("wallets")
+          .update({
+            balance:
+              Number(wallet.balance) +
+              sellerAmount,
 
-              pending:
-                Number(wallet.pending) +
-                sellerAmount,
+            pending:
+              Number(wallet.pending) +
+              sellerAmount,
 
-              total_sales:
-                Number(wallet.total_sales) +
-                sellerAmount,
+            total_sales:
+              Number(wallet.total_sales) +
+              sellerAmount,
 
-              withdrawable:
-                Number(wallet.withdrawable) +
-                sellerAmount,
-            })
-            .eq("user_id", sellerId);
+            withdrawable:
+              Number(wallet.withdrawable) +
+              sellerAmount,
+          })
+          .eq("user_id", sellerId);
 
         if (walletUpdateError) {
           console.error(walletUpdateError);
@@ -328,9 +319,94 @@ export async function POST(req: Request) {
       }
     }
 
+    /*
+     * ============================================================
+     * NOTIFICATIONS
+     * ============================================================
+     */
+
+    /*
+     * 1. Notify the buyer.
+     */
+    const buyerNotification = {
+      user_id: buyerId,
+      title: "Payment successful 🎉",
+      message: `Your payment of ₦${paidAmount.toLocaleString(
+        "en-NG"
+      )} was successful. Your ${orders.length} ${
+        orders.length === 1 ? "order has" : "orders have"
+      } been created.`,
+      is_read: false,
+    };
+
+    const {
+      error: buyerNotificationError,
+    } = await supabase
+      .from("notifications")
+      .insert(buyerNotification);
+
+    if (buyerNotificationError) {
+      console.error(
+        "Buyer notification failed:",
+        buyerNotificationError
+      );
+    }
+
+    /*
+     * 2. Notify each seller.
+     *
+     * Group the seller's products together so a seller
+     * receives one notification instead of one notification
+     * for every individual product.
+     */
+    for (const [
+      sellerId,
+      sellerAmount,
+    ] of sellerTotals.entries()) {
+      const sellerItems = cartItems.filter(
+        (item) => item.seller_id === sellerId
+      );
+
+      const productNames = sellerItems
+        .map((item) => item.title)
+        .filter(Boolean);
+
+      const productText =
+        productNames.length === 1
+          ? productNames[0]
+          : `${productNames.length} products`;
+
+      const sellerNotification = {
+        user_id: sellerId,
+        title: "New order received 🛒",
+        message: `You received a new order for ${productText}. Sale amount: ₦${sellerAmount.toLocaleString(
+          "en-NG"
+        )}.`,
+        is_read: false,
+      };
+
+      const {
+        error: sellerNotificationError,
+      } = await supabase
+        .from("notifications")
+        .insert(sellerNotification);
+
+      if (sellerNotificationError) {
+        console.error(
+          `Seller notification failed for ${sellerId}:`,
+          sellerNotificationError
+        );
+      }
+    }
+
+    /*
+     * Payment, orders, wallets and notifications have
+     * now been processed.
+     */
     return NextResponse.json({
       success: true,
-      message: "Payment verified and orders processed.",
+      message:
+        "Payment verified, orders processed and notifications created.",
       orderCount: orders.length,
     });
   } catch (error) {
