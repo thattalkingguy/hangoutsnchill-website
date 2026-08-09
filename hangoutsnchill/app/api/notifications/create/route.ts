@@ -8,11 +8,7 @@ const supabase = createClient(
 
 export async function POST(req: Request) {
   try {
-    const {
-      userId,
-      title,
-      message,
-    } = await req.json();
+    const { userId, title, message } = await req.json();
 
     if (!userId || !title || !message) {
       return NextResponse.json(
@@ -51,7 +47,6 @@ export async function POST(req: Request) {
       success: true,
       message: "Notification created successfully.",
     });
-
   } catch (error) {
     console.error(error);
 
