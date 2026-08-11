@@ -62,7 +62,7 @@ export default function Sidebar() {
 
       <div className="border-t p-4">
         <Link
-          href="/login"
+          href="/auth/login"
           className="flex items-center justify-center rounded-xl bg-red-600 px-4 py-3 font-semibold text-white transition hover:bg-red-700"
         >
           🚪 Logout
