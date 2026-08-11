@@ -71,20 +71,32 @@ export default function AdminWithdrawalsPage() {
       return;
     }
 
-    const { error: withdrawalError } = await supabase
-      .from("withdrawals")
-      .update({
-        status: "approved",
-      })
-      .eq("id", item.id);
+const { data: updatedWithdrawal, error: withdrawalError } =
+  await supabase
+    .from("withdrawals")
+    .update({
+      status: "approved",
+    })
+    .eq("id", item.id)
+    .select()
+    .single();
 
     if (withdrawalError) {
       alert(withdrawalError.message);
       return;
     }
 
-    alert("✅ Withdrawal approved.");
-    loadWithdrawals();
+if (updatedWithdrawal) {
+  setWithdrawals((current) =>
+    current.map((withdrawal) =>
+      withdrawal.id === item.id
+        ? { ...withdrawal, status: "approved" }
+        : withdrawal
+    )
+  );
+}
+
+alert("Withdrawal approved.");
   }
 
   async function rejectWithdrawal(id: string) {
