@@ -17,11 +17,7 @@ export default function AdminLayout({
       href: "/admin/users",
       icon: "👥",
     },
-    {
-      title: "Products",
-      href: "/admin/products",
-      icon: "📦",
-    },
+
     {
       title: "Orders",
       href: "/admin/orders",
