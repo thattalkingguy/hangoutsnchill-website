@@ -613,6 +613,237 @@
 
     </div>
   </footer>
+<!-- Sharon AI Assistant -->
+<style>
+  #sharon-launcher {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 9999;
+    border: 0;
+    border-radius: 999px;
+    padding: 14px 20px;
+    background: #111;
+    color: #fff;
+    font: 600 15px Arial, sans-serif;
+    cursor: pointer;
+    box-shadow: 0 8px 30px rgba(0,0,0,.25);
+  }
 
+  #sharon-chat {
+    display: none;
+    position: fixed;
+    right: 24px;
+    bottom: 82px;
+    width: min(380px, calc(100vw - 32px));
+    height: 560px;
+    z-index: 9998;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 18px 60px rgba(0,0,0,.25);
+    font-family: Arial, sans-serif;
+  }
+
+  #sharon-header {
+    padding: 16px;
+    background: #111;
+    color: #fff;
+  }
+
+  #sharon-header strong {
+    display: block;
+    font-size: 17px;
+  }
+
+  #sharon-header span {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    opacity: .75;
+  }
+
+  #sharon-messages {
+    height: calc(100% - 132px);
+    padding: 16px;
+    overflow-y: auto;
+    background: #f7f7f7;
+  }
+
+  .sharon-message {
+    max-width: 85%;
+    margin-bottom: 12px;
+    padding: 10px 13px;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+
+  .sharon-bot {
+    margin-right: auto;
+    background: #fff;
+    border: 1px solid #e5e5e5;
+  }
+
+  .sharon-user {
+    margin-left: auto;
+    background: #111;
+    color: #fff;
+  }
+
+  #sharon-form {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+    background: #fff;
+  }
+
+  #sharon-input {
+    flex: 1;
+    min-width: 0;
+    padding: 11px 12px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    outline: none;
+    font-size: 14px;
+  }
+
+  #sharon-form button {
+    border: 0;
+    border-radius: 10px;
+    padding: 0 15px;
+    background: #111;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  #sharon-form button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+  }
+</style>
+
+<button id="sharon-launcher" type="button">💬 Chat with Sharon</button>
+
+<div id="sharon-chat">
+  <div id="sharon-header">
+    <strong>Sharon</strong>
+    <span>AI Client Assistant • ThattalkingGuy...</span>
+  </div>
+
+  <div id="sharon-messages">
+    <div class="sharon-message sharon-bot">
+      Hi! I'm Sharon 👋 How can I help you today?
+    </div>
+  </div>
+
+  <form id="sharon-form">
+    <input
+      id="sharon-input"
+      type="text"
+      placeholder="Tell me what you need..."
+      autocomplete="off"
+    />
+    <button id="sharon-send" type="submit">Send</button>
+  </form>
+</div>
+
+<script>
+  (() => {
+    const API_URL =
+      "https://thattalkingguy-sharon-backend.vercel.app/api/chat";
+
+    const launcher = document.getElementById("sharon-launcher");
+    const chat = document.getElementById("sharon-chat");
+    const messages = document.getElementById("sharon-messages");
+    const form = document.getElementById("sharon-form");
+    const input = document.getElementById("sharon-input");
+    const sendButton = document.getElementById("sharon-send");
+
+    const conversation = [];
+
+    launcher.addEventListener("click", () => {
+      const isOpen = chat.style.display === "block";
+      chat.style.display = isOpen ? "none" : "block";
+
+      if (!isOpen) {
+        input.focus();
+      }
+    });
+
+    function addMessage(text, type) {
+      const message = document.createElement("div");
+      message.className =
+        "sharon-message " +
+        (type === "user" ? "sharon-user" : "sharon-bot");
+
+      message.textContent = text;
+      messages.appendChild(message);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const question = input.value.trim();
+
+      if (!question || sendButton.disabled) {
+        return;
+      }
+
+      addMessage(question, "user");
+
+      conversation.push({
+        role: "user",
+        content: question
+      });
+
+      input.value = "";
+      sendButton.disabled = true;
+      sendButton.textContent = "...";
+
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            question,
+            conversation,
+            visitor: {}
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || "Sharon is unavailable.");
+        }
+
+        addMessage(data.answer, "bot");
+
+        conversation.push({
+          role: "assistant",
+          content: data.answer
+        });
+      } catch (error) {
+        console.error("Sharon chat error:", error);
+        addMessage(
+          "I'm having trouble connecting right now. Please try again in a moment.",
+          "bot"
+        );
+      } finally {
+        sendButton.disabled = false;
+        sendButton.textContent = "Send";
+        input.focus();
+      }
+    });
+  })();
+</script>
 </body>
 </html>
