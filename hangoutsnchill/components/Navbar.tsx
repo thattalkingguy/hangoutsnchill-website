@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useWishlist } from "@/context/WishlistContext";
@@ -35,7 +35,7 @@ export default function Navbar() {
           href="/dashboard/wishlist"
           className="font-medium text-red-500 hover:text-red-600"
         >
-          ❤️ Wishlist ({count})
+          Γ¥ñ∩╕Å Wishlist ({count})
         </Link>
       </div>
 
@@ -57,3 +57,4 @@ export default function Navbar() {
     </nav>
   );
 }
+

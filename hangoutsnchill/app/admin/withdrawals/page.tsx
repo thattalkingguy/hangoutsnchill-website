@@ -23,14 +23,15 @@ export default function AdminWithdrawalsPage() {
   }, []);
 
   async function loadWithdrawals() {
+
     const { data, error } = await supabase
       .from("withdrawals")
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error(error);
-    }
+if (error) {
+  console.error("WITHDRAWALS ERROR:", error);
+}
 
     setWithdrawals(data || []);
     setLoading(false);

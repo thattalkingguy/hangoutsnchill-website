@@ -1,123 +1,164 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+
+const navigation = [
+  {
+    href: "/admin",
+    label: "Dashboard",
+    icon: "📊",
+  },
+  {
+    href: "/admin/users",
+    label: "Users",
+    icon: "👥",
+  },
+  {
+    href: "/admin/exchange",
+    label: "Exchange",
+    icon: "🔄",
+  },
+  {
+    href: "/admin/treasury",
+    label: "Treasury",
+    icon: "🏦",
+  },
+  {
+    href: "/admin/withdrawals",
+    label: "Withdrawals",
+    icon: "💸",
+  },
+  {
+    href: "/admin/analytics",
+    label: "Analytics",
+    icon: "📈",
+  },
+];
 
 export default function AdminLayout({
   children,
 }: {
   children: ReactNode;
 }) {
-  const menu = [
-    {
-      title: "Dashboard",
-      href: "/admin",
-      icon: "📊",
-    },
-    {
-      title: "Users",
-      href: "/admin/users",
-      icon: "👥",
-    },
+  const pathname = usePathname();
 
-    {
-      title: "Orders",
-      href: "/admin/orders",
-      icon: "🛒",
-    },
-    {
-      title: "Withdrawals",
-      href: "/admin/withdrawals",
-      icon: "💸",
-    },
-    {
-      title: "Analytics",
-      href: "/admin/analytics",
-      icon: "📈",
-    },
-    {
-      title: "Notifications",
-      href: "/notifications",
-      icon: "🔔",
-    },
-    {
-      title: "Marketplace",
-      href: "/marketplace",
-      icon: "🏪",
-    },
-  ];
+  function isActive(href: string) {
+    if (href === "/admin") {
+      return pathname === "/admin";
+    }
+
+    return (
+      pathname === href ||
+      pathname.startsWith(`${href}/`)
+    );
+  }
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
+      {/* ADMIN NAVIGATION */}
 
-      <aside className="w-72 bg-slate-900 text-white">
-
-        <div className="border-b border-slate-700 p-8">
-
-          <h1 className="text-3xl font-bold">
-            HangoutsNChill
-          </h1>
-
-          <p className="mt-2 text-sm text-slate-400">
-            Super Admin Panel
-          </p>
-
-        </div>
-
-        <nav className="space-y-2 p-6">
-
-          {menu.map((item) => (
+      <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="flex min-h-16 items-center justify-between gap-4">
+            
+            {/* BRAND */}
 
             <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-4 rounded-xl px-4 py-3 transition hover:bg-slate-800"
+              href="/admin"
+              className="flex shrink-0 items-center gap-3"
             >
-              <span className="text-2xl">
-                {item.icon}
-              </span>
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-900 text-lg">
+                H
+              </div>
 
-              <span className="font-medium">
-                {item.title}
-              </span>
+              <div className="hidden sm:block">
+                <p className="text-sm font-bold text-gray-900">
+                  HnC Admin
+                </p>
+
+                <p className="text-xs text-gray-500">
+                  Command Center
+                </p>
+              </div>
             </Link>
 
-          ))}
+            {/* DESKTOP NAV */}
 
-        </nav>
+            <nav className="hidden items-center gap-1 lg:flex">
+              {navigation.map((item) => {
+                const active =
+                  isActive(item.href);
 
-      </aside>
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${
+                      active
+                        ? "bg-gray-900 text-white"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    }`}
+                  >
+                    <span className="mr-2">
+                      {item.icon}
+                    </span>
 
-      <div className="flex flex-1 flex-col">
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
 
-        <header className="flex items-center justify-between border-b bg-white px-10 py-6">
+            {/* USER SIDE */}
 
-          <div>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/"
+                className="hidden rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 md:block"
+              >
+                View HnC
+              </Link>
 
-            <h2 className="text-3xl font-bold">
-              Admin Control Center
-            </h2>
-
-            <p className="text-gray-500">
-              Manage the HangoutsNChill marketplace
-            </p>
-
-          </div>
-
-          <div className="flex items-center gap-4">
-
-            <div className="rounded-full bg-blue-600 px-4 py-2 font-semibold text-white">
-              ADMIN
+              <span className="rounded-xl bg-green-50 px-3 py-2 text-xs font-bold text-green-700">
+                ADMIN
+              </span>
             </div>
-
           </div>
 
-        </header>
+          {/* MOBILE NAV */}
 
-        <main className="flex-1 p-8">
-          {children}
-        </main>
+          <nav className="flex gap-2 overflow-x-auto pb-3 lg:hidden">
+            {navigation.map((item) => {
+              const active =
+                isActive(item.href);
 
-      </div>
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`shrink-0 rounded-xl px-3 py-2 text-sm font-semibold transition ${
+                    active
+                      ? "bg-gray-900 text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  <span className="mr-1">
+                    {item.icon}
+                  </span>
 
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      </header>
+
+      {/* PAGE CONTENT */}
+
+      {children}
     </div>
   );
 }

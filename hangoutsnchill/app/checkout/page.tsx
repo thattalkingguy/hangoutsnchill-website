@@ -65,6 +65,12 @@ export default function CheckoutPage() {
     loadCheckout();
   }, [router]);
 
+  /*
+   * These values are used only for displaying the cart.
+   *
+   * The actual amount charged is recalculated securely
+   * by the server from the products table.
+   */
   const total = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
@@ -86,6 +92,9 @@ export default function CheckoutPage() {
     setProcessing(true);
 
     try {
+      /*
+       * Get the currently authenticated Supabase user.
+       */
       const {
         data: { user },
         error: userError,
@@ -97,13 +106,33 @@ export default function CheckoutPage() {
       }
 
       /*
-       * For now, HangoutsNChill accepts NGN checkout only.
-       * This prevents accidentally combining products with
-       * different currencies in one Paystack transaction.
+       * Get the user's current access token.
+       *
+       * The payment API uses this token to verify
+       * the identity of the buyer.
+       */
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError || !session?.access_token) {
+        throw new Error(
+          "Your login session has expired. Please log in again."
+        );
+      }
+
+      /*
+       * We currently support NGN checkout only.
+       *
+       * This check is for the checkout display/UX.
+       * The server independently validates the currency.
        */
       const currencies = [
         ...new Set(
-          cart.map((item) => (item.currency ?? "NGN").toUpperCase())
+          cart.map((item) =>
+            (item.currency ?? "NGN").toUpperCase()
+          )
         ),
       ];
 
@@ -121,30 +150,21 @@ export default function CheckoutPage() {
         );
       }
 
-      const amountInNaira = cart.reduce(
-        (sum, item) => sum + item.price * item.quantity,
-        0
-      );
-
-      const amountInKobo = Math.round(amountInNaira * 100);
-
-      if (amountInKobo <= 0) {
-        throw new Error("Invalid checkout amount.");
-      }
-
       /*
-       * Send the complete cart to our server.
+       * IMPORTANT:
        *
-       * The server will put these items into Paystack metadata
-       * and later use the same metadata during verification to
-       * create the individual orders for each seller.
+       * We intentionally DO NOT send:
+       * - price
+       * - seller_id
+       * - title
+       * - total amount
+       *
+       * The server retrieves those values directly
+       * from the products table.
        */
       const items = cart.map((item) => ({
         productId: item.id,
-        sellerId: item.seller_id,
         quantity: item.quantity,
-        unitPrice: item.price,
-        title: item.title,
       }));
 
       const response = await fetch(
@@ -153,12 +173,10 @@ export default function CheckoutPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({
             email,
-            amount: amountInKobo,
-            currency,
-            userId: user.id,
             items,
           }),
         }
@@ -183,6 +201,9 @@ export default function CheckoutPage() {
         );
       }
 
+      /*
+       * Send the customer to Paystack.
+       */
       window.location.href = authorizationUrl;
     } catch (error) {
       console.error(error);

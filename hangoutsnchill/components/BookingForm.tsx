@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 const initialState = {
   clientName: "",
@@ -21,19 +22,69 @@ const initialState = {
 export default function BookingForm() {
   const [form, setForm] = useState(initialState);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  function handleChange(event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
+  function handleChange(
+    event: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) {
     const { name, value } = event.target;
+
     setForm((current) => ({
       ...current,
       [name]: value,
     }));
+
+    setErrorMessage("");
+    setSubmitted(false);
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitted(true);
-    setForm(initialState);
+
+    if (submitting) return;
+
+    setSubmitting(true);
+    setSubmitted(false);
+    setErrorMessage("");
+
+    try {
+      const { error } = await supabase.from("bookings").insert({
+        client_name: form.clientName,
+        phone: form.phone,
+        email: form.email,
+        event_type: form.eventType,
+        event_date: form.eventDate,
+        event_location: form.eventLocation,
+        venue: form.venue || null,
+        guests: form.guests ? Number(form.guests) : null,
+        duration: form.duration || null,
+        artist: form.artist || "ATUNBI",
+        budget: form.budget || null,
+        requirements: form.requirements || null,
+        message: form.message || null,
+      });
+
+      if (error) {
+        console.error("Booking submission error:", error);
+        setErrorMessage(
+          "Sorry, your booking request could not be submitted. Please try again."
+        );
+        return;
+      }
+
+      setSubmitted(true);
+      setForm(initialState);
+    } catch (error) {
+      console.error("Unexpected booking error:", error);
+      setErrorMessage(
+        "Something went wrong while submitting your booking request. Please try again."
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -204,19 +255,30 @@ export default function BookingForm() {
           />
         </label>
 
+        {errorMessage ? (
+          <div className="rounded-[28px] border border-red-300 bg-red-50 p-6 text-sm leading-7 text-red-900 shadow-sm">
+            <p className="font-semibold">Booking request not submitted.</p>
+            <p className="mt-2">{errorMessage}</p>
+          </div>
+        ) : null}
+
         <button
           type="submit"
-          className="w-full rounded-full bg-[#1f242b] px-6 py-4 text-sm font-semibold text-white transition hover:bg-[#3e4661]"
+          disabled={submitting}
+          className="w-full rounded-full bg-[#1f242b] px-6 py-4 text-sm font-semibold text-white transition hover:bg-[#3e4661] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          SUBMIT BOOKING REQUEST
+          {submitting ? "SUBMITTING REQUEST..." : "SUBMIT BOOKING REQUEST"}
         </button>
       </form>
 
       {submitted ? (
         <div className="mt-8 rounded-[28px] border border-[#b28640] bg-[#fff7e6] p-6 text-sm leading-7 text-[#1f242b] shadow-sm">
-          <p className="font-semibold">Thank you. Your booking request has been received.</p>
+          <p className="font-semibold">
+            Thank you. Your booking request has been received.
+          </p>
           <p className="mt-3">
-            Atunbi Entertainment will review your request and contact you shortly.
+            Atunbi Entertainment will review your request and contact you
+            shortly.
           </p>
         </div>
       ) : null}
