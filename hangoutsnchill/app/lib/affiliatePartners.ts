@@ -13,9 +13,21 @@ export const affiliatePartners: AffiliatePartner[] = [
     id: "deriv",
     name: "Deriv",
     category: "Trading & Financial Education",
-    description: "Explore trading education and Deriv official trading platforms.",
+    description:
+      "Explore trading education and Deriv official trading platforms.",
     route: "/earn/deriv",
-    affiliateUrl: "https://track.deriv.com/_H2OBoLjntcP1hit6RV3zsGNd7ZgqdRLk/1/",
+    affiliateUrl:
+      "https://track.deriv.com/_H2OBoLjntcP1hit6RV3zsGNd7ZgqdRLk/1/",
+    active: true,
+  },
+  {
+    id: "temu",
+    name: "Temu",
+    category: "Shopping & Deals",
+    description:
+      "Discover Temu deals, first-order promotions, and shopping opportunities through HnC90Clock.",
+    route: "/earn/temu",
+    affiliateUrl: "https://temu.to/k/evoluh1tc32",
     active: true,
   },
 ];
