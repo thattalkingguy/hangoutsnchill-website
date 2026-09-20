@@ -75,19 +75,31 @@ export default function Home() {
           </Link>
 
           <nav className="hidden items-center gap-6 text-sm font-medium text-slate-300 lg:flex">
-            <Link href="/marketplace" className="transition hover:text-emerald-400">
+            <Link
+              href="/marketplace"
+              className="transition hover:text-emerald-400"
+            >
               Marketplace
             </Link>
 
-            <Link href="/academy" className="transition hover:text-emerald-400">
+            <Link
+              href="/academy"
+              className="transition hover:text-emerald-400"
+            >
               Academy
             </Link>
 
-            <Link href="/community" className="transition hover:text-emerald-400">
+            <Link
+              href="/community"
+              className="transition hover:text-emerald-400"
+            >
               Community
             </Link>
 
-            <Link href="/creators" className="transition hover:text-emerald-400">
+            <Link
+              href="/creators"
+              className="transition hover:text-emerald-400"
+            >
               Creators
             </Link>
 
@@ -95,16 +107,19 @@ export default function Home() {
               Earn
             </Link>
 
-            <Link href="/invest" className="transition hover:text-emerald-400">
+            <Link
+              href="/invest"
+              className="transition hover:text-emerald-400"
+            >
               Invest
             </Link>
           </nav>
 
           <Link
-            href="/invest"
+            href="/services/e-affidavit"
             className="rounded-full bg-emerald-400 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-emerald-300"
           >
-            Explore HnC
+            Get E-Affidavit
           </Link>
         </div>
       </header>
@@ -156,6 +171,51 @@ export default function Home() {
         </div>
       </section>
 
+      {/* E-AFFIDAVIT PUBLIC SERVICE */}
+      <section className="border-y border-white/10 bg-white/[0.025]">
+        <div className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
+          <Link
+            href="/services/e-affidavit"
+            className="group block overflow-hidden rounded-3xl border border-emerald-400/20 bg-gradient-to-r from-emerald-400/10 to-white/[0.03] p-7 transition hover:border-emerald-400/50 hover:bg-emerald-400/15 md:p-9"
+          >
+            <div className="flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
+              <div className="max-w-3xl">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">🏛️</span>
+
+                  <span className="text-xs font-black uppercase tracking-[0.2em] text-emerald-400">
+                    HnC Public Service
+                  </span>
+                </div>
+
+                <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
+                  Need an E-Affidavit?
+                </h2>
+
+                <p className="mt-3 text-lg leading-8 text-slate-300">
+                  Get started through HnC and access the official Federal
+                  High Court e-Affidavit service. No HnC membership required.
+                </p>
+
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <span className="rounded-full bg-emerald-400 px-4 py-2 text-sm font-bold text-slate-950">
+                    HnC service fee: ₦0
+                  </span>
+
+                  <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-300">
+                    Government/court charges apply separately
+                  </span>
+                </div>
+              </div>
+
+              <div className="shrink-0 rounded-full bg-emerald-400 px-7 py-4 text-center font-bold text-slate-950 transition group-hover:bg-emerald-300">
+                Get Started →
+              </div>
+            </div>
+          </Link>
+        </div>
+      </section>
+
       {/* CONNECT / BUY / GROW */}
       <section className="border-y border-white/10 bg-white/[0.025]">
         <div className="mx-auto max-w-7xl px-6 py-20 lg:px-8">
@@ -163,9 +223,7 @@ export default function Home() {
             <div className="rounded-3xl border border-white/10 bg-slate-950 p-8">
               <div className="text-4xl">🤝</div>
 
-              <h2 className="mt-6 text-2xl font-black">
-                Connect
-              </h2>
+              <h2 className="mt-6 text-2xl font-black">Connect</h2>
 
               <p className="mt-3 leading-7 text-slate-400">
                 Meet people, creators, entrepreneurs and communities around
@@ -183,9 +241,7 @@ export default function Home() {
             <div className="rounded-3xl border border-white/10 bg-slate-950 p-8">
               <div className="text-4xl">🛍️</div>
 
-              <h2 className="mt-6 text-2xl font-black">
-                Buy & Discover
-              </h2>
+              <h2 className="mt-6 text-2xl font-black">Buy & Discover</h2>
 
               <p className="mt-3 leading-7 text-slate-400">
                 Discover products, digital products, services and businesses
@@ -203,9 +259,7 @@ export default function Home() {
             <div className="rounded-3xl border border-white/10 bg-slate-950 p-8">
               <div className="text-4xl">🚀</div>
 
-              <h2 className="mt-6 text-2xl font-black">
-                Learn & Grow
-              </h2>
+              <h2 className="mt-6 text-2xl font-black">Learn & Grow</h2>
 
               <p className="mt-3 leading-7 text-slate-400">
                 Build skills, discover opportunities and turn ideas into
@@ -251,9 +305,7 @@ export default function Home() {
                 {pillar.label}
               </div>
 
-              <h3 className="mt-5 text-2xl font-black">
-                {pillar.title}
-              </h3>
+              <h3 className="mt-5 text-2xl font-black">{pillar.title}</h3>
 
               <p className="mt-4 leading-7 text-slate-400">
                 {pillar.description}
@@ -389,6 +441,13 @@ export default function Home() {
               <Link href="/invest" className="hover:text-emerald-400">
                 Invest
               </Link>
+
+              <Link
+                href="/services/e-affidavit"
+                className="hover:text-emerald-400"
+              >
+                E-Affidavit
+              </Link>
             </div>
           </div>
 
@@ -397,6 +456,44 @@ export default function Home() {
           </div>
         </div>
       </footer>
+        {/* E-AFFIDAVIT PUBLIC SERVICE */}
+        <section className="mx-auto max-w-7xl px-6 py-16">
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-8 md:p-12">
+            <div className="max-w-3xl">
+              <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-blue-600">
+                HnC Public Service
+              </p>
+
+              <h2 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
+                Need an E-Affidavit?
+              </h2>
+
+              <p className="mt-4 text-lg leading-8 text-slate-600">
+                Get started with the official Federal High Court e-Affidavit
+                service. No HnC membership is required.
+              </p>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">
+                  HnC service fee: ₦0
+                </span>
+
+                <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">
+                  Government/court charges apply separately
+                </span>
+              </div>
+
+              <div className="mt-8">
+                <Link
+                  href="/services/e-affidavit"
+                  className="inline-flex items-center rounded-full bg-slate-900 px-6 py-3 font-semibold text-white transition hover:bg-slate-700"
+                >
+                  Get E-Affidavit →
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
     </main>
   );
 }
