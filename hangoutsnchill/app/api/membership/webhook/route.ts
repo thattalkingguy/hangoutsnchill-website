@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import {
+  notifyMember,
+  createAdminAlert,
+} from "@/lib/hncOperations";
 
 export const runtime = "nodejs";
 
@@ -177,24 +181,70 @@ async function findMembershipSubscription(data: any) {
     }
   }
 
+  /*
+   * Customer code is NOT unique enough to blindly select the latest
+   * membership. A Paystack customer can have more than one historical
+   * or concurrent subscription.
+   *
+   * Only use this fallback when it resolves to exactly one HnC
+   * membership, and when an event plan code (if present) agrees with
+   * that membership's authoritative HnC plan.
+   */
   if (customerCode) {
-    const { data: subscription, error } = await supabaseAdmin
-      .from("member_subscriptions")
-      .select("*")
-      .eq("paystack_customer_code", customerCode)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const { data: customerMemberships, error } =
+      await supabaseAdmin
+        .from("member_subscriptions")
+        .select("*")
+        .eq("paystack_customer_code", customerCode)
+        .order("created_at", { ascending: false })
+        .limit(2);
 
     if (error) {
       console.error(
         "Membership subscription lookup by customer code failed:",
         error
       );
+      return null;
     }
 
-    if (subscription) {
-      return subscription;
+    if (customerMemberships?.length === 1) {
+      const candidate = customerMemberships[0];
+      const eventPlanCode = getPlanCode(data);
+
+      if (eventPlanCode) {
+        const { data: plan, error: planError } =
+          await supabaseAdmin
+            .from("membership_plans")
+            .select("paystack_plan_code")
+            .eq("id", candidate.plan_id)
+            .maybeSingle();
+
+        if (planError) {
+          console.error(
+            "Membership plan lookup for customer fallback failed:",
+            planError
+          );
+          return null;
+        }
+
+        if (
+          !plan?.paystack_plan_code ||
+          plan.paystack_plan_code !== eventPlanCode
+        ) {
+          console.warn(
+            "Rejected customer-code membership fallback because Paystack plan does not match the HnC membership plan."
+          );
+          return null;
+        }
+      }
+
+      return candidate;
+    }
+
+    if (customerMemberships && customerMemberships.length > 1) {
+      console.warn(
+        "Rejected customer-code membership fallback because multiple HnC memberships match the Paystack customer."
+      );
     }
   }
 
@@ -533,6 +583,35 @@ async function handleChargeSuccess(data: any) {
     );
   }
 
+  try {
+    await notifyMember({
+      userId: membership.user_id,
+      title: "HnC Membership Renewed 🎉",
+      message: `Your HnC membership payment was confirmed and your membership is active${periodEnd ? ` through ${periodEnd}` : ""}.`,
+    });
+
+    await createAdminAlert({
+      severity: "info",
+      title: "HnC Membership Renewed",
+      message: `Membership ${membership.id} was renewed successfully through the Paystack webhook.`,
+      source: "membership.webhook",
+      metadata: {
+        event: "charge.success",
+        user_id: membership.user_id,
+        membership_id: membership.id,
+        subscription_code: subscriptionCode,
+        customer_code: customerCode,
+        period_start: periodStart,
+        period_end: periodEnd,
+      },
+    });
+  } catch (notificationError) {
+    console.error(
+      "Membership webhook notification failed:",
+      notificationError
+    );
+  }
+
   return {
     handled: true,
     membership_id: membership.id,
@@ -575,6 +654,34 @@ async function handleInvoicePaymentFailed(data: any) {
   if (error) {
     throw new Error(
       `Failed to mark membership past_due: ${error.message}`
+    );
+  }
+
+  try {
+    await notifyMember({
+      userId: membership.user_id,
+      title: "HnC Membership Payment Needs Attention",
+      message:
+        "Your HnC membership payment could not be completed. Please check your payment method and membership status.",
+    });
+
+    await createAdminAlert({
+      severity: "attention",
+      title: "HnC Membership Payment Failed",
+      message: `Membership ${membership.id} was marked past_due after a failed Paystack payment.`,
+      source: "membership.webhook",
+      metadata: {
+        event: "invoice.payment_failed",
+        user_id: membership.user_id,
+        membership_id: membership.id,
+        subscription_code: getSubscriptionCode(data),
+        customer_code: getCustomerCode(data),
+      },
+    });
+  } catch (notificationError) {
+    console.error(
+      "Membership payment-failure notification failed:",
+      notificationError
     );
   }
 
@@ -665,6 +772,33 @@ async function handleSubscriptionNotRenew(data: any) {
     );
   }
 
+  try {
+    await notifyMember({
+      userId: membership.user_id,
+      title: "HnC Membership Will Not Auto-Renew",
+      message: `Your HnC membership will remain active until the current period ends${periodEnd ? ` on ${periodEnd}` : ""}, but it will not automatically renew.`,
+    });
+
+    await createAdminAlert({
+      severity: "attention",
+      title: "HnC Membership Will Not Auto-Renew",
+      message: `Membership ${membership.id} was marked active/non-renewing by Paystack.`,
+      source: "membership.webhook",
+      metadata: {
+        event: "subscription.not_renew",
+        user_id: membership.user_id,
+        membership_id: membership.id,
+        subscription_code: getSubscriptionCode(data),
+        current_period_end: periodEnd,
+      },
+    });
+  } catch (notificationError) {
+    console.error(
+      "Membership non-renewal notification failed:",
+      notificationError
+    );
+  }
+
   return {
     handled: true,
     membership_id: membership.id,
@@ -721,6 +855,43 @@ async function handleSubscriptionDisable(data: any) {
   if (error) {
     throw new Error(
       `Failed to disable membership: ${error.message}`
+    );
+  }
+
+  try {
+    await notifyMember({
+      userId: membership.user_id,
+      title:
+        finalStatus === "expired"
+          ? "HnC Membership Expired"
+          : "HnC Membership Cancelled",
+      message:
+        finalStatus === "expired"
+          ? "Your HnC membership has expired."
+          : "Your HnC membership has been cancelled.",
+    });
+
+    await createAdminAlert({
+      severity: "attention",
+      title:
+        finalStatus === "expired"
+          ? "HnC Membership Expired"
+          : "HnC Membership Cancelled",
+      message: `Membership ${membership.id} was marked ${finalStatus} by the Paystack webhook.`,
+      source: "membership.webhook",
+      metadata: {
+        event: "subscription.disable",
+        user_id: membership.user_id,
+        membership_id: membership.id,
+        subscription_code: getSubscriptionCode(data),
+        paystack_status: paystackStatus,
+        final_status: finalStatus,
+      },
+    });
+  } catch (notificationError) {
+    console.error(
+      "Membership disable notification failed:",
+      notificationError
     );
   }
 

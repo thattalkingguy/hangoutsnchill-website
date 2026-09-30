@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import {
+  notifyMember,
+  createAdminAlert,
+} from "@/lib/hncOperations";
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -628,11 +632,20 @@ export async function POST(request: Request) {
         unknown
       >;
 
-    let paystackSubscriptionCode =
-      typeof evidence.paystack_subscription_code ===
-      "string"
+    const metadataSubscriptionCode =
+      typeof metadata.paystack_subscription_code === "string"
+        ? metadata.paystack_subscription_code
+        : null;
+
+    const evidenceSubscriptionCode =
+      typeof evidence.paystack_subscription_code === "string"
         ? evidence.paystack_subscription_code
         : null;
+
+    let paystackSubscriptionCode =
+      metadataSubscriptionCode ||
+      evidenceSubscriptionCode ||
+      null;
 
     /*
      * If the initialization response did not expose the
@@ -957,6 +970,46 @@ export async function POST(request: Request) {
         }
       );
     }
+    /*
+     * ============================================================
+     * 19B. NOTIFY MEMBER + HnC ADMIN
+     * ============================================================
+     *
+     * Notification failures must never undo a successfully
+     * activated membership.
+     */
+
+    try {
+      await notifyMember({
+        userId,
+        title: "HnC Membership Activated 🎉",
+        message: `Your ${membershipPlan.name} membership is now active. Your current membership period runs until ${new Date(
+          currentPeriodEnd
+        ).toLocaleDateString("en-NG")}.`,
+      });
+
+      await createAdminAlert({
+        severity: "info",
+        title: "Membership Activated",
+        message: `${membershipPlan.name} membership was successfully activated for an HnC member.`,
+        source: "membership.verify",
+        metadata: {
+          user_id: userId,
+          membership_plan_id: membershipPlan.id,
+          membership_plan_slug: membershipPlan.slug,
+          membership_subscription_id: createdSubscription.id,
+          hnc_transaction_id: hncTransaction.id,
+          paystack_reference: reference,
+          paystack_subscription_code: paystackSubscriptionCode,
+        },
+      });
+    } catch (notificationError) {
+      console.error(
+        "Membership notification/alert creation failed:",
+        notificationError
+      );
+    }
+
 
     /*
      * ============================================================
