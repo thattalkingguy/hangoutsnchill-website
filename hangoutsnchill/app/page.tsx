@@ -50,6 +50,7 @@ const features = [
   "Academy",
   "Community",
   "Creators",
+  "Events",
   "Earn",
   "Invest",
   "Digital Products",
@@ -101,6 +102,13 @@ export default function Home() {
               className="transition hover:text-emerald-400"
             >
               Creators
+            </Link>
+
+            <Link
+              href="/events"
+              className="transition hover:text-emerald-400"
+            >
+              Events
             </Link>
 
             <Link href="/earn" className="transition hover:text-emerald-400">
@@ -432,6 +440,10 @@ export default function Home() {
 
               <Link href="/creators" className="hover:text-emerald-400">
                 Creators
+              </Link>
+
+              <Link href="/events" className="hover:text-emerald-400">
+                Events
               </Link>
 
               <Link href="/earn" className="hover:text-emerald-400">
