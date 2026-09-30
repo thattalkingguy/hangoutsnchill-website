@@ -90,6 +90,16 @@ function getReference(data: any): string | null {
   );
 }
 
+function getPlanCode(data: any): string | null {
+  return (
+    data?.plan?.plan_code ||
+    data?.plan?.plan_code ||
+    data?.subscription?.plan?.plan_code ||
+    data?.subscription?.plan_code ||
+    null
+  );
+}
+
 async function findMembershipSubscription(data: any) {
   const subscriptionCode = getSubscriptionCode(data);
   const customerCode = getCustomerCode(data);
@@ -191,6 +201,68 @@ async function findMembershipSubscription(data: any) {
   return null;
 }
 
+async function findHncTransaction(data: any) {
+  const reference = getReference(data);
+
+  if (!reference) {
+    return null;
+  }
+
+  const { data: transaction, error } = await supabaseAdmin
+    .from("hnc_transactions")
+    .select("id, buyer_id, payment_reference, transaction_id, metadata")
+    .eq("payment_reference", reference)
+    .maybeSingle();
+
+  if (error) {
+    console.error(
+      "HnC transaction lookup failed:",
+      error
+    );
+    return null;
+  }
+
+  return transaction;
+}
+
+async function recordWebhookEvent(
+  transactionId: string | null,
+  event: string,
+  data: any,
+  result?: Record<string, any>
+) {
+  if (!transactionId) {
+    return;
+  }
+
+  try {
+    await supabaseAdmin
+      .from("hnc_transaction_events")
+      .insert({
+        transaction_id: transactionId,
+        event_type: `paystack_${event}`,
+        previous_status: null,
+        new_status: null,
+        description: `Paystack membership webhook received: ${event}.`,
+        event_data: {
+          event,
+          reference: getReference(data),
+          subscription_code: getSubscriptionCode(data),
+          customer_code: getCustomerCode(data),
+          plan_code: getPlanCode(data),
+          email_token: getEmailToken(data),
+          result: result || null,
+          received_at: new Date().toISOString(),
+        },
+      });
+  } catch (error) {
+    console.error(
+      "Failed to record Paystack webhook event:",
+      error
+    );
+  }
+}
+
 async function updateHncTransactionFromWebhook(
   data: any,
   event: string,
@@ -199,13 +271,13 @@ async function updateHncTransactionFromWebhook(
   const reference = getReference(data);
 
   if (!reference) {
-    return;
+    return null;
   }
 
   const { data: transaction, error: lookupError } =
     await supabaseAdmin
       .from("hnc_transactions")
-      .select("id, metadata")
+      .select("id, buyer_id, transaction_id, metadata")
       .eq("payment_reference", reference)
       .maybeSingle();
 
@@ -214,11 +286,11 @@ async function updateHncTransactionFromWebhook(
       "HnC transaction webhook lookup failed:",
       lookupError
     );
-    return;
+    return null;
   }
 
   if (!transaction) {
-    return;
+    return null;
   }
 
   const existingMetadata =
@@ -228,19 +300,61 @@ async function updateHncTransactionFromWebhook(
       ? transaction.metadata
       : {};
 
+  const customerCode = getCustomerCode(data);
+  const emailToken = getEmailToken(data);
+  const planCode = getPlanCode(data);
+
+  const webhookHistory = Array.isArray(
+    (existingMetadata as Record<string, unknown>)
+      .paystack_webhook_history
+  )
+    ? [
+        ...((existingMetadata as Record<string, unknown>)
+          .paystack_webhook_history as unknown[]),
+      ]
+    : [];
+
+  webhookHistory.push({
+    event,
+    received_at: new Date().toISOString(),
+    reference,
+    subscription_code: subscriptionCode || null,
+    customer_code: customerCode || null,
+    email_token: emailToken || null,
+    plan_code: planCode || null,
+  });
+
+  const nextMetadata: Record<string, unknown> = {
+    ...existingMetadata,
+    last_paystack_webhook_event: event,
+    last_paystack_webhook_at: new Date().toISOString(),
+    paystack_webhook_history: webhookHistory.slice(-20),
+  };
+
+  if (subscriptionCode) {
+    nextMetadata.paystack_subscription_code =
+      subscriptionCode;
+  }
+
+  if (customerCode) {
+    nextMetadata.paystack_customer_code =
+      customerCode;
+  }
+
+  if (emailToken) {
+    nextMetadata.paystack_email_token =
+      emailToken;
+  }
+
+  if (planCode) {
+    nextMetadata.paystack_webhook_plan_code =
+      planCode;
+  }
+
   const { error } = await supabaseAdmin
     .from("hnc_transactions")
     .update({
-      metadata: {
-        ...existingMetadata,
-        last_paystack_webhook_event: event,
-        last_paystack_webhook_at: new Date().toISOString(),
-        ...(subscriptionCode
-          ? {
-              paystack_subscription_code: subscriptionCode,
-            }
-          : {}),
-      },
+      metadata: nextMetadata,
       updated_at: new Date().toISOString(),
     })
     .eq("id", transaction.id);
@@ -251,21 +365,47 @@ async function updateHncTransactionFromWebhook(
       error
     );
   }
+
+  return transaction;
 }
 
 async function handleSubscriptionCreate(data: any) {
+  const subscriptionCode = getSubscriptionCode(data);
+  const customerCode = getCustomerCode(data);
+  const emailToken = getEmailToken(data);
+
+  /*
+   * Important:
+   * subscription.create can arrive before HnC has created
+   * member_subscriptions.
+   *
+   * Always preserve the Paystack subscription information
+   * first when the webhook contains a usable reference.
+   */
+  const transaction = await updateHncTransactionFromWebhook(
+    data,
+    "subscription.create",
+    subscriptionCode
+  );
+
+  await recordWebhookEvent(
+    transaction?.id || null,
+    "subscription.create",
+    data
+  );
+
   const membership = await findMembershipSubscription(data);
 
   if (!membership) {
     return {
       handled: false,
-      reason: "Membership subscription not found yet",
+      deferred: true,
+      reason:
+        "Subscription received and preserved, but HnC membership record does not exist yet.",
+      subscription_code: subscriptionCode,
+      customer_code: customerCode,
     };
   }
-
-  const subscriptionCode = getSubscriptionCode(data);
-  const customerCode = getCustomerCode(data);
-  const emailToken = getEmailToken(data);
 
   const updatePayload: Record<string, any> = {
     updated_at: new Date().toISOString(),
@@ -277,11 +417,13 @@ async function handleSubscriptionCreate(data: any) {
   }
 
   if (customerCode) {
-    updatePayload.paystack_customer_code = customerCode;
+    updatePayload.paystack_customer_code =
+      customerCode;
   }
 
   if (emailToken) {
-    updatePayload.paystack_email_token = emailToken;
+    updatePayload.paystack_email_token =
+      emailToken;
   }
 
   const { error } = await supabaseAdmin
@@ -295,36 +437,45 @@ async function handleSubscriptionCreate(data: any) {
     );
   }
 
-  await updateHncTransactionFromWebhook(
-    data,
-    "subscription.create",
-    subscriptionCode
-  );
-
   return {
     handled: true,
     membership_id: membership.id,
     status: membership.status,
+    subscription_code: subscriptionCode,
   };
 }
 
 async function handleChargeSuccess(data: any) {
+  const subscriptionCode = getSubscriptionCode(data);
+
+  /*
+   * Preserve the successful Paystack event even if the
+   * membership row is not available yet.
+   */
+  const transaction = await updateHncTransactionFromWebhook(
+    data,
+    "charge.success",
+    subscriptionCode
+  );
+
+  await recordWebhookEvent(
+    transaction?.id || null,
+    "charge.success",
+    data
+  );
+
   const membership = await findMembershipSubscription(data);
 
   if (!membership) {
-    await updateHncTransactionFromWebhook(
-      data,
-      "charge.success",
-      getSubscriptionCode(data)
-    );
-
     return {
       handled: false,
-      reason: "Membership subscription not found yet",
+      deferred: true,
+      reason:
+        "Successful Paystack charge received, but HnC membership record does not exist yet.",
+      subscription_code: subscriptionCode,
     };
   }
 
-  const subscriptionCode = getSubscriptionCode(data);
   const customerCode = getCustomerCode(data);
   const emailToken = getEmailToken(data);
 
@@ -362,11 +513,13 @@ async function handleChargeSuccess(data: any) {
   }
 
   if (customerCode) {
-    updatePayload.paystack_customer_code = customerCode;
+    updatePayload.paystack_customer_code =
+      customerCode;
   }
 
   if (emailToken) {
-    updatePayload.paystack_email_token = emailToken;
+    updatePayload.paystack_email_token =
+      emailToken;
   }
 
   const { error } = await supabaseAdmin
@@ -380,25 +533,33 @@ async function handleChargeSuccess(data: any) {
     );
   }
 
-  await updateHncTransactionFromWebhook(
-    data,
-    "charge.success",
-    subscriptionCode
-  );
-
   return {
     handled: true,
     membership_id: membership.id,
     status: "active",
+    subscription_code: subscriptionCode,
   };
 }
 
 async function handleInvoicePaymentFailed(data: any) {
+  const transaction = await updateHncTransactionFromWebhook(
+    data,
+    "invoice.payment_failed",
+    getSubscriptionCode(data)
+  );
+
+  await recordWebhookEvent(
+    transaction?.id || null,
+    "invoice.payment_failed",
+    data
+  );
+
   const membership = await findMembershipSubscription(data);
 
   if (!membership) {
     return {
       handled: false,
+      deferred: true,
       reason: "Membership subscription not found",
     };
   }
@@ -417,12 +578,6 @@ async function handleInvoicePaymentFailed(data: any) {
     );
   }
 
-  await updateHncTransactionFromWebhook(
-    data,
-    "invoice.payment_failed",
-    getSubscriptionCode(data)
-  );
-
   return {
     handled: true,
     membership_id: membership.id,
@@ -440,18 +595,44 @@ async function handleInvoiceUpdate(data: any) {
     return handleChargeSuccess(data);
   }
 
+  const transaction = await updateHncTransactionFromWebhook(
+    data,
+    "invoice.update",
+    getSubscriptionCode(data)
+  );
+
+  await recordWebhookEvent(
+    transaction?.id || null,
+    "invoice.update",
+    data
+  );
+
   return {
     handled: false,
-    reason: "Invoice update did not contain a successful payment",
+    reason:
+      "Invoice update did not contain a successful payment",
   };
 }
 
 async function handleSubscriptionNotRenew(data: any) {
+  const transaction = await updateHncTransactionFromWebhook(
+    data,
+    "subscription.not_renew",
+    getSubscriptionCode(data)
+  );
+
+  await recordWebhookEvent(
+    transaction?.id || null,
+    "subscription.not_renew",
+    data
+  );
+
   const membership = await findMembershipSubscription(data);
 
   if (!membership) {
     return {
       handled: false,
+      deferred: true,
       reason: "Membership subscription not found",
     };
   }
@@ -472,7 +653,8 @@ async function handleSubscriptionNotRenew(data: any) {
           }
         : {}),
       cancelled_at:
-        membership.cancelled_at || new Date().toISOString(),
+        membership.cancelled_at ||
+        new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
     .eq("id", membership.id);
@@ -492,11 +674,24 @@ async function handleSubscriptionNotRenew(data: any) {
 }
 
 async function handleSubscriptionDisable(data: any) {
+  const transaction = await updateHncTransactionFromWebhook(
+    data,
+    "subscription.disable",
+    getSubscriptionCode(data)
+  );
+
+  await recordWebhookEvent(
+    transaction?.id || null,
+    "subscription.disable",
+    data
+  );
+
   const membership = await findMembershipSubscription(data);
 
   if (!membership) {
     return {
       handled: false,
+      deferred: true,
       reason: "Membership subscription not found",
     };
   }
@@ -607,7 +802,8 @@ export async function POST(request: NextRequest) {
         break;
 
       case "invoice.payment_failed":
-        result = await handleInvoicePaymentFailed(data);
+        result =
+          await handleInvoicePaymentFailed(data);
         break;
 
       case "invoice.update":
@@ -615,18 +811,21 @@ export async function POST(request: NextRequest) {
         break;
 
       case "subscription.not_renew":
-        result = await handleSubscriptionNotRenew(data);
+        result =
+          await handleSubscriptionNotRenew(data);
         break;
 
       case "subscription.disable":
-        result = await handleSubscriptionDisable(data);
+        result =
+          await handleSubscriptionDisable(data);
         break;
 
       default:
         result = {
           handled: false,
           ignored: true,
-          reason: "Event is not required by the HnC membership workflow",
+          reason:
+            "Event is not required by the HnC membership workflow",
         };
         break;
     }
