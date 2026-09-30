@@ -546,7 +546,11 @@ if (
      * ============================================================
      */
 
-    if (!response.ok) {
+    if (
+      !response.ok ||
+      !data?.status ||
+      !data?.data
+    ) {
       console.error(
         "Paystack membership initialization failed:",
         data
@@ -557,22 +561,14 @@ if (
         .update({
           payment_status: "failed",
           metadata: {
-            platform: "HangoutsNChill",
-            transaction_type:
-              "membership_subscription",
-            membership_plan_id:
-              membershipPlan.id,
-            membership_plan_slug:
-              membershipPlan.slug,
-            membership_plan_name:
-              membershipPlan.name,
-            billing_interval:
-              membershipPlan.billing_interval,
-            paystack_plan_code:
-              membershipPlan.paystack_plan_code,
-            buyer_email: buyerEmail,
-            paystack_initialization_error:
-              data,
+            ...((hncTransaction as { metadata?: Record<string, unknown> }).metadata ?? {}),
+            paystack_initialization_error: {
+              message:
+                data?.message ??
+                "Paystack initialization failed.",
+              status: data?.status ?? null,
+              http_status: response.status,
+            },
           },
         })
         .eq(
@@ -593,7 +589,11 @@ if (
           description:
             "Paystack membership payment initialization failed.",
           event_data: {
-            paystack_response: data,
+            paystack_message:
+              data?.message ?? null,
+            paystack_status:
+              data?.status ?? null,
+            http_status: response.status,
           },
         });
 
@@ -606,7 +606,9 @@ if (
         },
         {
           status:
-            response.status || 500,
+            response.status >= 400
+              ? response.status
+              : 502,
         }
       );
     }
@@ -620,6 +622,45 @@ if (
     const paystackReference =
       data?.data?.reference ?? null;
 
+    const paystackAuthorizationUrl =
+      data?.data?.authorization_url ?? null;
+
+    if (!paystackReference || !paystackAuthorizationUrl) {
+      console.error(
+        "Paystack returned an incomplete membership initialization response:",
+        data
+      );
+
+      await supabaseAdmin
+        .from("hnc_transactions")
+        .update({
+          payment_status: "failed",
+          metadata: {
+            ...((hncTransaction as { metadata?: Record<string, unknown> }).metadata ?? {}),
+            paystack_initialization_error: {
+              message:
+                "Paystack did not return a payment reference and authorization URL.",
+              status: data?.status ?? null,
+              http_status: response.status,
+            },
+          },
+        })
+        .eq("id", hncTransaction.id);
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Paystack returned an incomplete payment initialization response.",
+        },
+        { status: 502 }
+      );
+    }
+
+    const existingMetadata =
+      ((hncTransaction as { metadata?: Record<string, unknown> })
+        .metadata ?? {}) as Record<string, unknown>;
+
     const {
       error: trustUpdateError,
     } = await supabaseAdmin
@@ -628,29 +669,12 @@ if (
         payment_reference:
           paystackReference,
         metadata: {
-          platform: "HangoutsNChill",
-          transaction_type:
-            "membership_subscription",
-          membership_plan_id:
-            membershipPlan.id,
-          membership_plan_slug:
-            membershipPlan.slug,
-          membership_plan_name:
-            membershipPlan.name,
-          billing_interval:
-            membershipPlan.billing_interval,
-          paystack_plan_code:
-            membershipPlan.paystack_plan_code,
-          buyer_email: buyerEmail,
-
+          ...existingMetadata,
           paystack_access_code:
             data?.data?.access_code ??
             null,
-
           paystack_authorization_url:
-            data?.data?.authorization_url ??
-            null,
-
+            paystackAuthorizationUrl,
           paystack_subscription_code:
             data?.data?.subscription_code ??
             null,
