@@ -408,7 +408,7 @@ if (
         payment_initiated_at:
           new Date().toISOString(),
       })
-      .select("id, transaction_id")
+      .select("id, transaction_id, metadata")
       .single();
 
     if (
