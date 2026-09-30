@@ -46,15 +46,15 @@ const pillars = [
 ];
 
 const features = [
-  "Marketplace",
-  "Academy",
-  "Community",
-  "Creators",
-  "Events",
-  "Earn",
-  "Invest",
-  "Digital Products",
-  "Business Opportunities",
+  { label: "Marketplace", href: "/marketplace" },
+  { label: "Academy", href: "/academy" },
+  { label: "Community", href: "/community" },
+  { label: "Creators", href: "/creators" },
+  { label: "Events", href: "/events" },
+  { label: "Earn", href: "/earn" },
+  { label: "Invest", href: "/invest" },
+  { label: "Digital Products", href: "/products" },
+  { label: "Business Opportunities", href: "/earn" },
 ];
 
 export default function Home() {
@@ -172,7 +172,13 @@ export default function Home() {
 
             <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-sm font-medium text-slate-500">
               {features.map((feature) => (
-                <span key={feature}>{feature}</span>
+                <Link
+                  key={feature.label}
+                  href={feature.href}
+                  className="transition hover:text-emerald-400 hover:underline hover:underline-offset-4"
+                >
+                  {feature.label}
+                </Link>
               ))}
             </div>
           </div>
@@ -468,44 +474,7 @@ export default function Home() {
           </div>
         </div>
       </footer>
-        {/* E-AFFIDAVIT PUBLIC SERVICE */}
-        <section className="mx-auto max-w-7xl px-6 py-16">
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-8 md:p-12">
-            <div className="max-w-3xl">
-              <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-blue-600">
-                HnC Public Service
-              </p>
 
-              <h2 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-                Need an E-Affidavit?
-              </h2>
-
-              <p className="mt-4 text-lg leading-8 text-slate-600">
-                Get started with the official Federal High Court e-Affidavit
-                service. No HnC membership is required.
-              </p>
-
-              <div className="mt-6 flex flex-wrap gap-3">
-                <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">
-                  HnC service fee: ₦0
-                </span>
-
-                <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">
-                  Government/court charges apply separately
-                </span>
-              </div>
-
-              <div className="mt-8">
-                <Link
-                  href="/services/e-affidavit"
-                  className="inline-flex items-center rounded-full bg-slate-900 px-6 py-3 font-semibold text-white transition hover:bg-slate-700"
-                >
-                  Get E-Affidavit →
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
     </main>
   );
 }
