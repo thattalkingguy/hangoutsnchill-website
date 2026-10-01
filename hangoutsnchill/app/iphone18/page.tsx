@@ -6,7 +6,7 @@ const quickLinks = [
   { label: "💰 Deals", href: "#deals" },
   { label: "🔄 Trade-In", href: "#trade" },
   { label: "🎧 Accessories", href: "#accessories" },
-  { label: "🤝 Become a Partner", href: "#partners" },
+  { label: "🤝 Partners", href: "#partners" },
 ];
 
 const campaignCards = [
@@ -49,6 +49,70 @@ const partnerTypes = [
   "Accessory brands",
   "Event sponsors",
   "Affiliate networks",
+];
+
+const partnerDirectory = [
+  {
+    name: "MTN eShop",
+    category: "Affiliate Commerce",
+    status: "Affiliate program available",
+    badge: "💰 COMMISSION",
+    description:
+      "MTN eShop currently operates an affiliate program for creators, publishers, bloggers and organizations. Its official page says qualifying purchases can earn up to 10% commission.",
+    opportunity:
+      "HnC can pursue approval and use tracked product links for eligible devices, accessories and other MTN eShop products.",
+    href: "https://uat-shop.mtn.ng/affiliate-marketing",
+    cta: "View MTN Affiliate Program →",
+    note: "HnC enrollment/approval is not being claimed here.",
+  },
+  {
+    name: "RHMS Tech",
+    category: "Apple Referral",
+    status: "Refer & Earn available",
+    badge: "🍎 APPLE",
+    description:
+      "RHMS Tech publishes a Refer & Earn program for customers buying, selling or swapping Apple devices.",
+    opportunity:
+      "RHMS publishes fixed referral rewards based on transaction value, creating a potential HnC route for Apple-device referrals and trade/swap leads.",
+    href: "https://www.rhmstech.com/affiliate",
+    cta: "View RHMS Referral Program →",
+    note: "Commission terms are subject to RHMS rules and may change.",
+  },
+  {
+    name: "Konga",
+    category: "Affiliate Commerce",
+    status: "Affiliate program available",
+    badge: "🛒 AFFILIATE",
+    description:
+      "Konga operates an affiliate platform that allows affiliates to promote products using unique links and earn commissions on qualifying orders.",
+    opportunity:
+      "HnC can pursue affiliate approval and promote eligible phones, accessories and technology products.",
+    href: "https://affiliate.konga.com/",
+    cta: "Visit Konga Affiliates →",
+    note: "Product-level commissions and eligibility should be confirmed inside the affiliate dashboard.",
+  },
+  {
+    name: "iStore Nigeria",
+    category: "Retail / Trade-In / Finance",
+    status: "Partner target",
+    badge: "🍏 RETAIL",
+    description:
+      "iStore identifies itself as an Apple Authorised Reseller and currently offers Apple devices together with trade-in and device-financing services.",
+    opportunity:
+      "HnC can approach iStore for a commercial partnership, sponsored campaign, event activation, referral arrangement or approved promotional placement.",
+    href: "https://www.istore.com.ng/",
+    cta: "Visit iStore Nigeria →",
+    note: "HnC is not claiming an iStore affiliate relationship.",
+  },
+];
+
+const commissionExamples = [
+  ["RHMS", "₦100k–₦349k", "₦5,000"],
+  ["RHMS", "₦350k–₦649k", "₦7,000"],
+  ["RHMS", "₦650k–₦999k", "₦12,000"],
+  ["RHMS", "₦1m–₦1.499m", "₦15,000"],
+  ["RHMS", "₦1.5m–₦2m", "₦20,000"],
+  ["RHMS", "Above ₦2m", "₦25,000"],
 ];
 
 export default function IPhone18Page() {
@@ -393,6 +457,121 @@ export default function IPhone18Page() {
             >
               HnC Earn →
             </Link>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="partner-directory"
+        className="border-y border-white/10 bg-slate-900/70"
+      >
+        <div className="mx-auto max-w-7xl px-5 py-16 sm:px-6 lg:px-8">
+          <div className="max-w-3xl">
+            <div className="text-xs font-black uppercase tracking-[0.2em] text-emerald-400">
+              🔗 HnC Partner Directory
+            </div>
+
+            <h2 className="mt-3 text-3xl font-black sm:text-4xl">
+              Real partner opportunities. Clearly labeled.
+            </h2>
+
+            <p className="mt-4 leading-7 text-slate-400">
+              This directory separates existing public affiliate/referral
+              programs from businesses HnC may approach for a direct
+              partnership. HnC does not claim approval or commercial
+              relationships that have not been established.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-6 lg:grid-cols-2">
+            {partnerDirectory.map((partner) => (
+              <article
+                key={partner.name}
+                className="rounded-3xl border border-white/10 bg-slate-950 p-7 transition hover:border-emerald-400/25"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="rounded-full bg-emerald-400/10 px-3 py-1 text-[10px] font-black tracking-[0.16em] text-emerald-300">
+                    {partner.badge}
+                  </span>
+
+                  <span className="text-xs font-semibold text-slate-500">
+                    {partner.category}
+                  </span>
+                </div>
+
+                <h3 className="mt-5 text-2xl font-black">{partner.name}</h3>
+
+                <div className="mt-2 text-sm font-bold text-emerald-400">
+                  {partner.status}
+                </div>
+
+                <p className="mt-5 text-sm leading-7 text-slate-300">
+                  {partner.description}
+                </p>
+
+                <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                  <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                    HnC opportunity
+                  </div>
+
+                  <p className="mt-2 text-sm leading-6 text-slate-400">
+                    {partner.opportunity}
+                  </p>
+                </div>
+
+                <div className="mt-5 rounded-2xl bg-slate-900 p-4 text-xs leading-6 text-slate-500">
+                  ⚠️ {partner.note}
+                </div>
+
+                <a
+                  href={partner.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-6 inline-flex rounded-full bg-emerald-400 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-emerald-300"
+                >
+                  {partner.cta}
+                </a>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-5 py-16 sm:px-6 lg:px-8">
+        <div className="grid gap-8 lg:grid-cols-[1fr_0.8fr]">
+          <div>
+            <div className="text-xs font-black uppercase tracking-[0.2em] text-emerald-400">
+              💵 Published Referral Examples
+            </div>
+
+            <h2 className="mt-3 text-3xl font-black">
+              Where public commission terms exist, HnC can show them clearly.
+            </h2>
+
+            <p className="mt-4 leading-7 text-slate-400">
+              The examples below are published by RHMS Tech on its official
+              referral page. They are not HnC earnings guarantees and are not
+              presented as current HnC revenue.
+            </p>
+          </div>
+
+          <div className="overflow-hidden rounded-3xl border border-white/10">
+            <div className="grid grid-cols-3 border-b border-white/10 bg-white/[0.04] px-5 py-4 text-xs font-black uppercase tracking-[0.12em] text-slate-400">
+              <span>Partner</span>
+              <span>Order value</span>
+              <span>Published reward</span>
+            </div>
+
+            {commissionExamples.map(([partner, range, reward]) => (
+              <div
+                key={`${range}-${reward}`}
+                className="grid grid-cols-3 border-b border-white/5 px-5 py-4 text-sm"
+              >
+                <span className="font-bold text-slate-300">{partner}</span>
+                <span className="text-slate-400">{range}</span>
+                <span className="font-black text-emerald-400">{reward}</span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
