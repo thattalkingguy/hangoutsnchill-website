@@ -55,6 +55,7 @@ const features = [
   { label: "Invest", href: "/invest" },
   { label: "Digital Products", href: "/products" },
   { label: "Business Opportunities", href: "/earn" },
+  { label: "📱 iPhone 18 Hub", href: "/iphone18" },
 ];
 
 export default function Home() {
@@ -224,6 +225,56 @@ export default function Home() {
 
               <div className="shrink-0 rounded-full bg-emerald-400 px-7 py-4 text-center font-bold text-slate-950 transition group-hover:bg-emerald-300">
                 Get Started →
+              </div>
+            </div>
+          </Link>
+        </div>
+      </section>
+
+      {/* IPHONE 18 HUB FEATURE */}
+      <section className="border-y border-white/10 bg-slate-900/70">
+        <div className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
+          <Link
+            href="/iphone18"
+            className="group block overflow-hidden rounded-3xl border border-emerald-400/20 bg-gradient-to-r from-emerald-400/10 via-white/[0.03] to-blue-500/10 p-7 transition hover:-translate-y-0.5 hover:border-emerald-400/50 md:p-9"
+          >
+            <div className="flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
+              <div className="max-w-3xl">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">📱</span>
+
+                  <span className="text-xs font-black uppercase tracking-[0.2em] text-emerald-400">
+                    HnC Tech & Commerce
+                  </span>
+                </div>
+
+                <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
+                  HnC iPhone 18 Hub
+                </h2>
+
+                <p className="mt-3 text-lg leading-8 text-slate-300">
+                  Win • Shop • Compare • Trade • Accessorize. Discover
+                  iPhone-related giveaways, deals, campaigns and partner
+                  opportunities through HnC.
+                </p>
+
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <span className="rounded-full bg-emerald-400 px-4 py-2 text-sm font-bold text-slate-950">
+                    🎁 Giveaways
+                  </span>
+
+                  <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-300">
+                    💰 Deals & Offers
+                  </span>
+
+                  <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-300">
+                    🤝 Partner Campaigns
+                  </span>
+                </div>
+              </div>
+
+              <div className="shrink-0 rounded-full bg-emerald-400 px-7 py-4 text-center font-bold text-slate-950 transition group-hover:bg-emerald-300">
+                Explore iPhone 18 →
               </div>
             </div>
           </Link>
@@ -460,6 +511,10 @@ export default function Home() {
                 Invest
               </Link>
 
+              <Link href="/iphone18" className="hover:text-emerald-400">
+                iPhone 18
+              </Link>
+
               <Link
                 href="/services/e-affidavit"
                 className="hover:text-emerald-400"
@@ -474,7 +529,6 @@ export default function Home() {
           </div>
         </div>
       </footer>
-
     </main>
   );
 }
