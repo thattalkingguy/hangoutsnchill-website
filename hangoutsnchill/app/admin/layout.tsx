@@ -35,6 +35,11 @@ const navigation = [
     label: "Analytics",
     icon: "📈",
   },
+  {
+    href: "/admin/affiliate",
+    label: "Affiliate",
+    icon: "💰",
+  },
 ];
 
 export default function AdminLayout({
