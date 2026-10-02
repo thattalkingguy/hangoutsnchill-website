@@ -16,7 +16,7 @@ function cleanSlug(value: string | null) {
   return slug;
 }
 
-function getControlledDestination(slug: string) {
+function getConfiguredPartner(slug: string) {
   const partner = affiliatePartners.find(
     (item) => item.id === slug && item.active
   );
@@ -25,12 +25,6 @@ function getControlledDestination(slug: string) {
     return null;
   }
 
-  /*
-   * Commercial affiliate URL takes priority.
-   *
-   * programUrl is used only when HnC does not yet have
-   * an approved affiliate referral URL for the partner.
-   */
   const destination =
     partner.affiliateUrl || partner.programUrl || null;
 
@@ -90,12 +84,18 @@ async function getOptionalUserId(request: Request) {
  *
  * Public affiliate/program click tracker.
  *
+ * Flow:
+ * 1. Validate the HnC-configured partner.
+ * 2. Resolve the partner against affiliate_partners using its slug.
+ * 3. Use the database UUID as affiliate_clicks.partner_id.
+ * 4. Record the click.
+ * 5. Redirect to the server-controlled destination.
+ *
  * Security:
- * - partner must be a known HnC partner
- * - destination is resolved server-side
- * - arbitrary redirect URLs are never accepted
- * - anonymous clicks are allowed
- * - authenticated member IDs are recorded when available
+ * - No arbitrary destination URL is accepted.
+ * - Only configured HnC partners can be tracked.
+ * - Anonymous clicks are allowed.
+ * - Authenticated member IDs are recorded when available.
  */
 export async function GET(request: Request) {
   try {
@@ -117,9 +117,16 @@ export async function GET(request: Request) {
       );
     }
 
-    const resolved = getControlledDestination(slug);
+    /*
+     * First resolve the partner from the controlled
+     * application configuration.
+     *
+     * This prevents arbitrary database rows from becoming
+     * outbound destinations.
+     */
+    const configured = getConfiguredPartner(slug);
 
-    if (!resolved) {
+    if (!configured) {
       return NextResponse.json(
         {
           success: false,
@@ -132,21 +139,74 @@ export async function GET(request: Request) {
       );
     }
 
+    /*
+     * Now resolve the real database partner.
+     *
+     * affiliate_clicks.partner_id is a UUID foreign key,
+     * so we must use affiliate_partners.id rather than
+     * the human-readable partner slug.
+     */
+    const { data: databasePartner, error: partnerError } =
+      await supabaseAdmin
+        .from("affiliate_partners")
+        .select("id, slug, name, active")
+        .eq("slug", slug)
+        .eq("active", true)
+        .maybeSingle();
+
+    if (partnerError) {
+      console.error(
+        "Affiliate partner lookup error:",
+        partnerError
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "HnC could not verify this affiliate partner.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    if (!databasePartner) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "This affiliate partner is not registered in HnC.",
+        },
+        {
+          status: 404,
+        }
+      );
+    }
+
     const userId = await getOptionalUserId(request);
 
     const referrer =
       request.headers.get("referer")?.slice(0, 1000) ||
       null;
 
-    const { error: clickError } =
+    /*
+     * Record the click using the database UUID.
+     */
+    const { data: click, error: clickError } =
       await supabaseAdmin
         .from("affiliate_clicks")
         .insert({
-          partner_id: resolved.partner.id,
+          partner_id: databasePartner.id,
           user_id: userId,
-          destination: resolved.destination,
+          destination: configured.destination,
           referrer,
-        });
+        })
+        .select(
+          "id, partner_id, user_id, clicked_at, destination, referrer"
+        )
+        .single();
 
     if (clickError) {
       console.error(
@@ -154,13 +214,6 @@ export async function GET(request: Request) {
         clickError
       );
 
-      /*
-       * Do not send the visitor to the partner if HnC
-       * failed to record the commercial click.
-       *
-       * This keeps the first version conservative and
-       * prevents untracked outbound commercial traffic.
-       */
       return NextResponse.json(
         {
           success: false,
@@ -174,7 +227,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.redirect(
-      resolved.destination,
+      configured.destination,
       302
     );
   } catch (error) {
