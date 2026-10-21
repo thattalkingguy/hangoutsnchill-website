@@ -16,11 +16,17 @@ export default function LoginPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setProduct(params.get("product"));
+    const next = params.get("next");
+    if (next && next.startsWith("/") && !next.startsWith("//")) setNextPath(next);
   }, []);
 
-  const successRedirect = product
-    ? `/dashboard?product=${product}`
-    : "/dashboard";
+  const [nextPath, setNextPath] = useState<string | null>(null);
+
+  const successRedirect = nextPath || (
+    product
+      ? `/dashboard?product=${encodeURIComponent(product)}`
+      : "/dashboard"
+  );
 
   async function handleLogin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
