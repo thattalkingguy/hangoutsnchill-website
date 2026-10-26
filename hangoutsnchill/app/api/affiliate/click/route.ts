@@ -1,67 +1,90 @@
+
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { affiliatePartners } from "@/app/lib/affiliatePartners";
 
-function cleanSlug(value: string | null) {
-  if (!value) {
-    return null;
-  }
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const ALLOWED_PROTOCOLS = new Set(["http:", "https:"]);
+
+function cleanSlug(value: string | null): string | null {
+  if (!value) return null;
 
   const slug = value.trim().toLowerCase();
 
-  if (!/^[a-z0-9-]+$/.test(slug)) {
-    return null;
-  }
-
-  return slug;
+  return /^[a-z0-9-]{1,80}$/.test(slug) ? slug : null;
 }
 
-function getConfiguredPartner(slug: string) {
+function cleanPathway(value: string | null): string | null {
+  if (!value) return null;
+
+  const pathway = value.trim().toLowerCase();
+
+  return /^[a-z0-9-]{1,40}$/.test(pathway) ? pathway : null;
+}
+
+function getConfiguredPartner(slug: string, pathway: string | null) {
   const partner = affiliatePartners.find(
     (item) => item.id === slug && item.active
   );
 
-  if (!partner) {
-    return null;
+  if (!partner) return null;
+
+  let destination: string | undefined;
+  let resolvedPathway: string | null = null;
+
+  if (slug === "deriv") {
+    if (!pathway || pathway === "customer") {
+      destination = partner.affiliateUrl;
+      resolvedPathway = "customer";
+    } else if (pathway === "partners") {
+      destination = partner.partnerUrl;
+      resolvedPathway = "partners";
+    } else {
+      return null;
+    }
+  } else {
+    // Other partners do not accept a pathway parameter.
+    if (pathway) return null;
+
+    // A programme application page is NOT a commission referral link.
+    // Require an actual affiliate URL for tracked redirects.
+    destination = partner.affiliateUrl;
   }
 
-  const destination =
-    partner.affiliateUrl || partner.programUrl || null;
-
-  if (!destination) {
-    return null;
-  }
+  if (!destination) return null;
 
   try {
     const parsed = new URL(destination);
 
-    if (!["http:", "https:"].includes(parsed.protocol)) {
+    if (
+      !ALLOWED_PROTOCOLS.has(parsed.protocol) ||
+      !parsed.hostname ||
+      parsed.username ||
+      parsed.password
+    ) {
       return null;
     }
 
     return {
       partner,
       destination: parsed.toString(),
+      pathway: resolvedPathway,
     };
   } catch {
     return null;
   }
 }
 
-async function getOptionalUserId(request: Request) {
+async function getOptionalUserId(request: Request): Promise<string | null> {
   const authorization = request.headers.get("authorization");
 
-  if (!authorization?.startsWith("Bearer ")) {
-    return null;
-  }
+  if (!authorization?.startsWith("Bearer ")) return null;
 
-  const accessToken = authorization
-    .slice("Bearer ".length)
-    .trim();
+  const accessToken = authorization.slice("Bearer ".length).trim();
 
-  if (!accessToken) {
-    return null;
-  }
+  if (!accessToken) return null;
 
   try {
     const {
@@ -69,83 +92,75 @@ async function getOptionalUserId(request: Request) {
       error,
     } = await supabaseAdmin.auth.getUser(accessToken);
 
-    if (error || !user) {
+    if (error || !user) return null;
+
+    return user.id;
+  } catch (error) {
+    console.error("Optional affiliate user lookup failed:", error);
+    return null;
+  }
+}
+
+function getReferrerOrigin(request: Request): string | null {
+  const refererHeader = request.headers.get("referer");
+
+  if (!refererHeader) return null;
+
+  try {
+    const parsed = new URL(refererHeader);
+
+    if (
+      !ALLOWED_PROTOCOLS.has(parsed.protocol) ||
+      !parsed.hostname
+    ) {
       return null;
     }
 
-    return user.id;
+    return parsed.origin;
   } catch {
     return null;
   }
 }
 
-/*
- * GET /api/affiliate/click?partner=mtn-eshop
- *
- * Public affiliate/program click tracker.
- *
- * Flow:
- * 1. Validate the HnC-configured partner.
- * 2. Resolve the partner against affiliate_partners using its slug.
- * 3. Use the database UUID as affiliate_clicks.partner_id.
- * 4. Record the click.
- * 5. Redirect to the server-controlled destination.
- *
- * Security:
- * - No arbitrary destination URL is accepted.
- * - Only configured HnC partners can be tracked.
- * - Anonymous clicks are allowed.
- * - Authenticated member IDs are recorded when available.
- */
+function errorResponse(message: string, status: number) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: message,
+    },
+    {
+      status,
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    }
+  );
+}
+
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-
-    const slug = cleanSlug(
-      searchParams.get("partner")
-    );
+    const requestUrl = new URL(request.url);
+    const slug = cleanSlug(requestUrl.searchParams.get("partner"));
+    const pathway = cleanPathway(requestUrl.searchParams.get("pathway"));
 
     if (!slug) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "A valid affiliate partner is required.",
-        },
-        {
-          status: 400,
-        }
-      );
+      return errorResponse("A valid affiliate partner is required.", 400);
     }
 
-    /*
-     * First resolve the partner from the controlled
-     * application configuration.
-     *
-     * This prevents arbitrary database rows from becoming
-     * outbound destinations.
-     */
-    const configured = getConfiguredPartner(slug);
+    if (requestUrl.searchParams.has("pathway") && !pathway) {
+      return errorResponse("The affiliate pathway is invalid.", 400);
+    }
+
+    const configured = getConfiguredPartner(slug, pathway);
 
     if (!configured) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "This affiliate partner is not currently configured for outbound tracking.",
-        },
-        {
-          status: 409,
-        }
+      return errorResponse(
+        "This partner is inactive or has no valid affiliate referral URL.",
+        409
       );
     }
 
-    /*
-     * Now resolve the real database partner.
-     *
-     * affiliate_clicks.partner_id is a UUID foreign key,
-     * so we must use affiliate_partners.id rather than
-     * the human-readable partner slug.
-     */
+    // The partner must be active in both the code registry and database.
     const { data: databasePartner, error: partnerError } =
       await supabaseAdmin
         .from("affiliate_partners")
@@ -155,96 +170,53 @@ export async function GET(request: Request) {
         .maybeSingle();
 
     if (partnerError) {
-      console.error(
-        "Affiliate partner lookup error:",
-        partnerError
-      );
+      console.error("Affiliate partner lookup error:", partnerError);
 
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "HnC could not verify this affiliate partner.",
-        },
-        {
-          status: 500,
-        }
+      return errorResponse(
+        "HnC could not verify this affiliate partner.",
+        500
       );
     }
 
     if (!databasePartner) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "This affiliate partner is not registered in HnC.",
-        },
-        {
-          status: 404,
-        }
+      return errorResponse(
+        "This affiliate partner is not registered and active in HnC.",
+        404
       );
     }
 
     const userId = await getOptionalUserId(request);
+    const referrer = getReferrerOrigin(request);
 
-    const referrer =
-      request.headers.get("referer")?.slice(0, 1000) ||
-      null;
-
-    /*
-     * Record the click using the database UUID.
-     */
-    const { data: click, error: clickError } =
-      await supabaseAdmin
-        .from("affiliate_clicks")
-        .insert({
-          partner_id: databasePartner.id,
-          user_id: userId,
-          destination: configured.destination,
-          referrer,
-        })
-        .select(
-          "id, partner_id, user_id, clicked_at, destination, referrer"
-        )
-        .single();
+    // Preserve the existing affiliate_clicks database schema.
+    const { error: clickError } = await supabaseAdmin
+      .from("affiliate_clicks")
+      .insert({
+        partner_id: databasePartner.id,
+        user_id: userId,
+        destination: configured.destination,
+        referrer,
+      });
 
     if (clickError) {
-      console.error(
-        "Affiliate click tracking error:",
-        clickError
-      );
+      console.error("Affiliate click tracking error:", clickError);
 
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "HnC could not record this partner click. Please try again.",
-        },
-        {
-          status: 500,
-        }
+      // Do not redirect if the click could not be recorded.
+      return errorResponse(
+        "HnC could not record this click. Please try again.",
+        500
       );
     }
 
-    return NextResponse.redirect(
-      configured.destination,
-      302
-    );
-  } catch (error) {
-    console.error(
-      "Affiliate click route unexpected error:",
-      error
-    );
-
-    return NextResponse.json(
-      {
-        success: false,
-        error:
-          "Unable to process affiliate partner click.",
+    return NextResponse.redirect(configured.destination, {
+      status: 302,
+      headers: {
+        "Cache-Control": "no-store",
       },
-      {
-        status: 500,
-      }
-    );
+    });
+  } catch (error) {
+    console.error("Affiliate click route error:", error);
+
+    return errorResponse("Unable to process affiliate click.", 500);
   }
 }
