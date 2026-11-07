@@ -51,6 +51,7 @@ const features = [
   { label: "Community", href: "/community" },
   { label: "Creators", href: "/creators" },
   { label: "Events", href: "/events" },
+  { label: "Tools", href: "/tools" },
   { label: "Earn", href: "/earn" },
   { label: "Invest", href: "/invest" },
   { label: "Digital Products", href: "/products" },
@@ -112,6 +113,13 @@ export default function Home() {
               Events
             </Link>
 
+            <Link
+              href="/tools"
+              className="transition hover:text-emerald-400"
+            >
+              Tools
+            </Link>
+
             <Link href="/earn" className="transition hover:text-emerald-400">
               Earn
             </Link>
@@ -124,12 +132,14 @@ export default function Home() {
             </Link>
           </nav>
 
-          <Link
-            href="/services/e-affidavit"
-            className="rounded-full bg-emerald-400 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-emerald-300"
+          <a
+            href="https://link.amazon/B05hGqHig"
+            target="_blank"
+            rel="sponsored nofollow noopener noreferrer"
+            className="rounded-full bg-amber-400 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-amber-300"
           >
-            Get E-Affidavit
-          </Link>
+            Shop Amazon
+          </a>
         </div>
       </header>
 
@@ -186,51 +196,45 @@ export default function Home() {
         </div>
       </section>
 
-      {/* E-AFFIDAVIT PUBLIC SERVICE */}
+      {/* AMAZON SHOPPING FEATURE */}
       <section className="border-y border-white/10 bg-white/[0.025]">
         <div className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
-          <Link
-            href="/services/e-affidavit"
-            className="group block overflow-hidden rounded-3xl border border-emerald-400/20 bg-gradient-to-r from-emerald-400/10 to-white/[0.03] p-7 transition hover:border-emerald-400/50 hover:bg-emerald-400/15 md:p-9"
+          <a
+            href="https://link.amazon/B05hGqHig"
+            target="_blank"
+            rel="sponsored nofollow noopener noreferrer"
+            className="group block overflow-hidden rounded-3xl border border-amber-400/20 bg-gradient-to-r from-amber-400/10 to-white/[0.03] p-7 transition hover:border-amber-400/50 hover:bg-amber-400/15 md:p-9"
           >
             <div className="flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
               <div className="max-w-3xl">
                 <div className="flex items-center gap-3">
-                  <span className="text-4xl">🏛️</span>
-
-                  <span className="text-xs font-black uppercase tracking-[0.2em] text-emerald-400">
-                    HnC Public Service
+                  <span className="text-4xl">🛍️</span>
+                  <span className="text-xs font-black uppercase tracking-[0.2em] text-amber-400">
+                    HnC Shopping
                   </span>
                 </div>
 
                 <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
-                  Need an E-Affidavit?
+                  Discover Amazon Shopping
                 </h2>
 
                 <p className="mt-3 text-lg leading-8 text-slate-300">
-                  Get started through HnC and access the official Federal
-                  High Court e-Affidavit service. No HnC membership required.
+                  Discover products, everyday essentials, useful gadgets and
+                  great finds from Amazon. Explore the store through HnC.
                 </p>
 
-                <div className="mt-5 flex flex-wrap gap-3">
-                  <span className="rounded-full bg-emerald-400 px-4 py-2 text-sm font-bold text-slate-950">
-                    HnC service fee: ₦0
-                  </span>
-
-                  <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-300">
-                    Government/court charges apply separately
-                  </span>
-                </div>
+                <p className="mt-4 text-xs leading-6 text-slate-400">
+                  As an Amazon Associate, HnC earns from qualifying purchases.
+                </p>
               </div>
 
-              <div className="shrink-0 rounded-full bg-emerald-400 px-7 py-4 text-center font-bold text-slate-950 transition group-hover:bg-emerald-300">
-                Get Started →
+              <div className="shrink-0 rounded-full bg-amber-400 px-7 py-4 text-center font-bold text-slate-950 transition group-hover:bg-amber-300">
+                Shop Amazon →
               </div>
             </div>
-          </Link>
+          </a>
         </div>
       </section>
-
       {/* IPHONE 18 HUB FEATURE */}
       <section className="border-y border-white/10 bg-slate-900/70">
         <div className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
@@ -503,6 +507,10 @@ export default function Home() {
                 Events
               </Link>
 
+              <Link href="/tools" className="hover:text-emerald-400">
+                Tools
+              </Link>
+
               <Link href="/earn" className="hover:text-emerald-400">
                 Earn
               </Link>
@@ -520,6 +528,20 @@ export default function Home() {
                 className="hover:text-emerald-400"
               >
                 E-Affidavit
+              </Link>
+
+              <Link
+                href="/privacy"
+                className="font-semibold text-slate-300 hover:text-emerald-400"
+              >
+                Privacy Policy
+              </Link>
+
+              <Link
+                href="/terms"
+                className="font-semibold text-slate-300 hover:text-emerald-400"
+              >
+                Terms of Service
               </Link>
             </div>
           </div>
